@@ -92,13 +92,16 @@ input,select{padding:10px 12px;border:1.5px solid var(--line);border-radius:10px
 .rt select{width:auto;max-width:150px;padding:6px 8px}.rt button{min-width:34px}.rt button.on{background:var(--honey)}
 .clr{display:inline-flex;align-items:center;gap:4px;font-weight:700;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:3px 8px 3px 12px;cursor:pointer}
 .clr input{width:26px;height:26px;padding:0;border:0;background:none;cursor:pointer}
-details>summary{cursor:pointer;font-weight:700;list-style:none;padding:8px 0}
+details>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-weight:700;list-style:none;padding:10px 14px;border-radius:12px;background:var(--cream);border:1.5px solid var(--line);user-select:none}
 details>summary::-webkit-details-marker{display:none}
-details>summary::after{content:'▾';float:right;transition:transform .2s}
-details[open]>summary::after{transform:rotate(180deg)}
-.panel>details{margin-top:12px;border-top:1.5px solid var(--line)}.panel>details>summary{font-size:16px}
-.tdrop{position:sticky;top:0;z-index:6;background:var(--butter);border:1.5px solid var(--line);border-radius:14px;padding:0 14px;margin-bottom:10px}
-.tdrop .rt{position:static;padding:4px 0 12px;max-height:55vh;overflow:auto}
+details>summary::after{content:'Show ▾';font-size:13px;background:var(--honey);border-radius:999px;padding:3px 12px;white-space:nowrap}
+details[open]>summary::after{content:'Hide ▴'}
+details>summary:hover{background:#ffe680}
+details>summary:focus-visible{outline:3px solid var(--sage);outline-offset:2px}
+.panel>details{margin-top:12px}.panel>details>summary{font-size:16px}.panel>details[open]>summary{margin-bottom:6px}
+.tdrop{position:sticky;top:0;z-index:6;background:var(--butter);padding:4px 0;margin-bottom:10px}
+.tdrop .rt{position:static;padding:8px 10px;margin-top:6px;max-height:55vh;overflow:auto;background:#fffdf0;border:1.5px solid var(--line);border-radius:12px}
+.editor{align-items:start}
 @media(max-width:760px){.editor section{order:-1}}
 </style>
 </head>
@@ -195,7 +198,7 @@ async function edit(id){
     <div class="row"><button class="soft" onclick="dash()">Back</button>
     ${id?'<button class="soft" onclick="del()">Delete</button><button class="soft" onclick="shareModal()">Share</button>':''}
     <button onclick="save()">Save letter</button></div></div>
-  <div class="editor"><aside class="card panel"><label for="title">Title</label><input id="title" value="${esc(S.cur.title)}" placeholder="Dear Mom"><details id="dpanel"><summary>Design your letter</summary>
+  <div class="editor"><aside class="card panel"><label for="title">Title</label><input id="title" value="${esc(S.cur.title)}" placeholder="Dear Mom"><details id="dpanel"><summary>🎨 Design your letter</summary>
     <label>Paper color</label><div class="swatches">${COLORS.map(c=>`<button class="sw ${c==d.paper?'on':''}" style="background:${c}" data-c="${c}" aria-label="Paper ${c}"></button>`).join('')}</div>
     <label for="font">Handwriting</label><select id="font">${Object.entries(FONTS).map(([k,v])=>`<option value="${v}" ${v==d.font?'selected':''}>${k}</option>`).join('')}</select>
     <label for="border">Border</label><select id="border">${['solid','dashed','double','none'].map(b=>`<option ${b==d.border?'selected':''}>${b}</option>`).join('')}</select>
