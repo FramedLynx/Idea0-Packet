@@ -1,4 +1,4 @@
-/* Sunny Letters: all page logic (login, dashboard, editor, sharing, viewer).
+/* Idea0: all page logic (login, dashboard, editor, sharing, viewer).
    Needs config.js (Supabase keys) and the libraries loaded in index.html first. */
 const $=(s,r=document)=>r.querySelector(s), app=$('#app');
 const COLORS=['#fff8d6','#ffefaa','#fdeaa8','#fce4c4','#f7cfc4','#e3efd3','#dbeaf2','#ffffff'];
@@ -134,7 +134,7 @@ async function edit(id){
     <div class="${pc(d)}" id="paper" style="${paperStyle(d)}"><div id="cns">${decoHTML(d.corner)}</div><div class="head" id="ph">${d.head}</div>
       <div class="body" id="body" contenteditable="true" aria-label="Letter text">${clean(S.cur.content)||'<p>Dear …</p>'}</div></div></section></div>`;
   const P=$('#paper');decorate();initMedia();initRT();
-  {const wide=matchMedia('(min-width:761px)').matches;$('#dpanel').open=wide;$('#tdrop').open=wide}
+  // Both dropdowns (Design your letter, Text tools) start collapsed on every screen size.
   document.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{S.design.paper=b.dataset.c;P.style.backgroundColor=b.dataset.c;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x==b))});
   $('#font').onchange=e=>{S.design.font=e.target.value;P.style.fontFamily=e.target.value+',cursive'};
   $('#border').onchange=e=>{S.design.border=e.target.value;P.className=pc(S.design)};
