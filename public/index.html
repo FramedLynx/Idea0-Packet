@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sunny Letters</title>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Caveat:wght@500;700&family=Courier+Prime&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Indie+Flower&family=Lora:ital@0;1&family=Merriweather&family=Nunito:wght@400;700&family=Pacifico&family=Patrick+Hand&family=Playfair+Display:ital@0;1&family=Quicksand:wght@400;700&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+:root{--butter:#fff8d6;--cream:#ffefaa;--honey:#f4cf58;--ink:#4a3f2a;--sage:#c5dcb8;--blush:#f7cfc4;--line:#ecd98a}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,sans-serif;background:var(--butter);color:var(--ink)}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:var(--cream);border-bottom:2px solid var(--line)}
+header h1{margin:0;font:700 30px Caveat,cursive}
+main{max-width:1000px;margin:0 auto;padding:24px 16px}
+button,input,select{font:inherit;color:inherit}
+button{background:var(--honey);border:0;border-radius:999px;padding:9px 18px;cursor:pointer;font-weight:700}
+button.soft{background:var(--cream);border:1.5px solid var(--line)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--sage);outline-offset:2px}
+input,select{padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fffdf0;width:100%}
+.card{background:#fffdf0;border:1.5px solid var(--line);border-radius:18px;padding:22px}
+.auth{max-width:380px;margin:60px auto}.auth h2{font:700 34px Caveat,cursive;margin:0 0 12px}
+.auth label{display:block;margin:10px 0 4px;font-weight:700}
+.err{color:#a8452f;min-height:22px;margin:8px 0 0}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.top h2{font:700 34px Caveat,cursive;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.mini{cursor:pointer;min-height:130px;display:flex;flex-direction:column;justify-content:space-between}
+.mini b{font:700 24px Caveat,cursive}.mini small{opacity:.7}
+.empty{text-align:center;padding:50px 10px}
+.editor{display:grid;grid-template-columns:260px 1fr;gap:18px}
+@media(max-width:760px){.editor{grid-template-columns:1fr}}
+.panel h3{margin:0 0 8px;font-size:15px}.panel label{display:block;margin:12px 0 4px;font-size:14px;font-weight:700}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw.on{border-color:var(--ink)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tools button{padding:6px 12px}
+.paper{min-height:460px;padding:36px 40px;border-radius:6px;box-shadow:0 6px 20px #c9b25a55;font-size:22px;line-height:1.6;overflow-wrap:anywhere}
+.paper .head{text-align:center;font-size:34px;min-height:10px}
+.body{outline:none;min-height:340px}.body img,.body video,.paper img,.paper video{max-width:100%;border-radius:10px;display:block;margin:12px 0}
+.body audio,.paper audio{width:100%;margin:12px 0}
+.b-solid{border:3px solid var(--honey)}.b-dashed{border:3px dashed #d9b93f}.b-double{border:6px double var(--honey)}.b-none{border:0}
+.modal{position:fixed;inset:0;background:#4a3f2a66;display:none;align-items:center;justify-content:center;padding:14px}
+.modal.on{display:flex}.modal .card{max-width:640px;width:100%;max-height:92vh;overflow:auto}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:14px 0}
+.opts button,.opts a{background:var(--cream);border:1.5px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;text-decoration:none;color:var(--ink);font-weight:700;cursor:pointer;display:block}
+.opts button:hover,.opts a:hover{background:var(--honey)}
+.share-out{text-align:center;padding:12px;background:var(--butter);border-radius:14px;min-height:60px}
+.row{display:flex;gap:8px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--butter);padding:10px 18px;border-radius:999px;display:none}
+@media print{header,.no-print{display:none!important}body{background:#fff}}
+.mw{position:relative;display:block;margin:12px 0}.mdel{position:absolute;top:8px;right:8px;z-index:2;padding:5px 12px;font-size:14px;background:#fff8d6;border:1.5px solid var(--line)}@media print{.mdel{display:none}}
+.mstate{margin-top:10px;font-size:14px}.mstate audio{width:100%;margin:6px 0}
+#mres{max-height:260px;overflow:auto;margin:8px 0}.res{border:1.5px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px;font-size:14px}.res audio{width:100%;margin:6px 0}
+.gate{text-align:center;padding:60px 20px}.gate .env{font-size:80px}.gate h2{font:700 38px Caveat,cursive;margin:8px 0}
+.mtoggle{position:fixed;right:16px;bottom:16px;width:48px;height:48px;border-radius:50%;padding:0;font-size:20px;z-index:5}
+.credit{text-align:center;font-size:13px;opacity:.7}
+.paper{position:relative}
+.pt-lined{background-image:repeating-linear-gradient(transparent 0,transparent 34px,#e0cd7a99 34px,#e0cd7a99 35px)}
+.pt-grid{background-image:linear-gradient(#e0cd7a55 1px,transparent 1px),linear-gradient(90deg,#e0cd7a55 1px,transparent 1px);background-size:28px 28px}
+.pt-dots{background-image:radial-gradient(#d9b93f77 1.5px,transparent 1.6px);background-size:22px 22px}
+.pt-stripes{background-image:repeating-linear-gradient(135deg,#ffffff66 0 14px,transparent 14px 28px)}
+.pt-wash{background-image:radial-gradient(circle at 15% 20%,#f7cfc499,transparent 45%),radial-gradient(circle at 85% 80%,#c5dcb899,transparent 45%),radial-gradient(circle at 80% 15%,#ffe58a99,transparent 40%)}
+.pt-confetti{background-image:radial-gradient(#f7cfc4 3px,transparent 3.5px),radial-gradient(#c5dcb8 3px,transparent 3.5px),radial-gradient(#f4cf58 2.5px,transparent 3px);background-size:70px 70px,90px 90px,50px 50px;background-position:0 0,30px 40px,15px 20px}
+.pt-gingham{background-image:linear-gradient(#f4cf5844 50%,transparent 50%),linear-gradient(90deg,#f4cf5844 50%,transparent 50%);background-size:40px 40px}
+.fx-tape::before{content:'';position:absolute;top:-14px;left:50%;width:120px;height:30px;transform:translateX(-50%) rotate(-3deg);background:#ffe58acc;box-shadow:0 1px 3px #0002}
+.fx-fold::after{content:'';position:absolute;right:0;bottom:0;width:44px;height:44px;background:linear-gradient(135deg,transparent 50%,#e8d68a 50%)}
+.fx-tilt{transform:rotate(-0.8deg)}.fx-lift{box-shadow:0 18px 40px #c9b25aaa}
+.cn{position:absolute;font-size:32px;pointer-events:none;user-select:none}.cn1{top:6px;left:10px}.cn2{top:6px;right:10px}.cn3{bottom:6px;left:10px}.cn4{bottom:6px;right:10px}
+</style>
+</head>
+<body>
+<header><h1>☀ Sunny Letters</h1><nav id="nav"></nav></header>
+<main id="app"></main>
+<div class="modal" id="modal"><div class="card" id="modalBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="/config.js"></script>
+<script>
+const $=(s,r=document)=>r.querySelector(s), app=$('#app');
+const COLORS=['#fff8d6','#ffefaa','#fdeaa8','#fce4c4','#f7cfc4','#e3efd3','#dbeaf2','#ffffff'];
+const FONTS={'Handwritten':'Caveat','Elegant script':'Dancing Script','Formal script':'Great Vibes','Playful script':'Pacifico','Notebook':'Indie Flower','Neat print':'Patrick Hand','Quick note':'Shadows Into Light','Tiny caps':'Amatic SC','Classic serif':'Lora','Fancy serif':'Playfair Display','Book':'Merriweather','Typewriter':'Courier Prime','Round':'Quicksand','Friendly':'Nunito'};
+const HEADS=['','🌻','💌','☀️','🌼','🎂','💛','🕊️'];
+const LIMITS={image:5,audio:10,video:25}; // MB per file
+const DEF={paper:'#fff8d6',font:'Caveat',border:'solid',head:'💌',pattern:'none',effect:'none',corner:'',coverTitle:''};
+const PATTERNS={'Plain':'none','Notebook lines':'lined','Grid':'grid','Polka dots':'dots','Soft stripes':'stripes','Watercolor':'wash','Confetti':'confetti','Gingham':'gingham'};
+const EFFECTS={'None':'none','Tape on top':'tape','Folded corner':'fold','Slight tilt':'tilt','Lifted shadow':'lift'};
+const CORNERS=['','🌻','🌼','🍃','⭐','❤️','🦋','🎈'];
+const OPT={border:['solid','dashed','double','none'],pattern:Object.values(PATTERNS),effect:Object.values(EFFECTS),corner:CORNERS};
+// Never trust design data from the database: keep only known values (viewers load other people's letters).
+function safeDesign(r){
+  r=r||{};const pick=(v,l,d)=>l.includes(v)?v:d,mu=r.music;
+  const m=mu&&typeof mu.src==='string'&&/^https:\/\/\S+$/.test(mu.src)?{src:mu.src,path:typeof mu.path==='string'?mu.path:null,title:String(mu.title||'').slice(0,120),credit:String(mu.credit||'').slice(0,300),start:Math.max(0,+mu.start||0),end:Math.max(0,+mu.end||0)}:null;
+  return {paper:/^#[0-9a-f]{3,8}$/i.test(r.paper)?r.paper:DEF.paper,font:Object.values(FONTS).includes(r.font)?r.font:DEF.font,
+    border:pick(r.border,OPT.border,'solid'),pattern:pick(r.pattern,OPT.pattern,'none'),effect:pick(r.effect,OPT.effect,'none'),
+    corner:pick(r.corner,OPT.corner,''),head:HEADS.includes(r.head)?r.head:'',coverTitle:String(r.coverTitle||'').slice(0,60),...(m?{music:m}:{})};
+}
+const pc=d=>`paper b-${d.border} pt-${d.pattern} fx-${d.effect}`;
+const decoHTML=e=>e?['cn1','cn2','cn3','cn4'].map(c=>`<span class="cn ${c}">${esc(e)}</span>`).join(''):'';
+let S={user:null,cur:null,design:{...DEF},del:[]}, sb;
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clean=h=>DOMPurify.sanitize(h||'');
+const paperStyle=d=>`background-color:${d.paper};font-family:${d.font},cursive`;
+const uname=()=>S.user?.user_metadata?.name||S.user?.email||'';
+async function logout(){await sb.auth.signOut();location.href='/'}
+function nav(){$('#nav').innerHTML=S.user?`<span>Hi, ${esc(uname())} </span><button class="soft" onclick="dash()">My letters</button> <button class="soft" onclick="logout()">Log out</button>`:''}
+
+/* ---------- auth ---------- */
+function authView(mode='login'){
+  nav();const reg=mode==='register';
+  app.innerHTML=`<div class="card auth"><h2>${reg?'Create your account':'Welcome back'}</h2>
+  ${reg?'<label for="n">Name</label><input id="n" autocomplete="name">':''}
+  <label for="e">Email</label><input id="e" type="email" autocomplete="email">
+  <label for="p">Password</label><input id="p" type="password" autocomplete="${reg?'new-password':'current-password'}">
+  <p class="err" id="err"></p><button id="go">${reg?'Sign up':'Log in'}</button>
+  <p><a href="#" id="sw">${reg?'I already have an account':'Create a new account'}</a></p></div>`;
+  $('#sw').onclick=e=>{e.preventDefault();authView(reg?'login':'register')};
+  $('#go').onclick=async()=>{
+    const email=$('#e').value.trim(),password=$('#p').value;$('#err').textContent='';
+    try{
+      if(reg&&(!$('#n').value.trim()||password.length<8))throw new Error('Enter your name and a password of 8+ characters.');
+      const r=reg?await sb.auth.signUp({email,password,options:{data:{name:$('#n').value.trim()}}}):await sb.auth.signInWithPassword({email,password});
+      if(r.error)throw r.error;
+      if(!r.data.session){$('#err').textContent='Check your email to confirm your account, then log in.';return}
+      S.user=r.data.user;dash();
+    }catch(e){$('#err').textContent=e.message}};
+}
+
+/* ---------- dashboard ---------- */
+async function dash(){
+  nav();const {data:ls,error}=await sb.from('letters').select('id,title,design,updated_at').order('updated_at',{ascending:false});
+  if(error)return toast(error.message);
+  app.innerHTML=`<div class="top"><h2>My letters</h2><button onclick="edit()">✍ Make a letter</button></div>`+
+  (ls.length?`<div class="grid">${ls.map(l=>`<div class="card mini" style="background-color:${safeDesign(l.design).paper}" onclick="edit('${l.id}')">
+    <b>${esc(l.design.head||'')} ${esc(l.title)}</b><small>Edited ${new Date(l.updated_at).toLocaleDateString()}</small></div>`).join('')}</div>`
+  :`<div class="card empty"><h3>No letters yet</h3><p>Write your first one and share it with someone.</p><button onclick="edit()">Make a letter</button></div>`);
+}
+
+/* ---------- designer / editor ---------- */
+async function edit(id){
+  nav();S.del=[];
+  if(id){const {data,error}=await sb.from('letters').select('*').eq('id',id).single();if(error)return toast(error.message);S.cur=data;S.design=safeDesign(data.design)}
+  else{S.cur={id:null,title:'',content:''};S.design={...DEF}}
+  const d=S.design;
+  app.innerHTML=`<div class="top"><h2>${id?'Edit letter':'New letter'}</h2>
+    <div class="row"><button class="soft" onclick="dash()">Back</button>
+    ${id?'<button class="soft" onclick="del()">Delete</button><button class="soft" onclick="shareModal()">Share</button>':''}
+    <button onclick="save()">Save letter</button></div></div>
+  <div class="editor"><aside class="card panel"><h3>Design your letter</h3>
+    <label for="title">Title</label><input id="title" value="${esc(S.cur.title)}" placeholder="Dear Mom">
+    <label>Paper color</label><div class="swatches">${COLORS.map(c=>`<button class="sw ${c==d.paper?'on':''}" style="background:${c}" data-c="${c}" aria-label="Paper ${c}"></button>`).join('')}</div>
+    <label for="font">Handwriting</label><select id="font">${Object.entries(FONTS).map(([k,v])=>`<option value="${v}" ${v==d.font?'selected':''}>${k}</option>`).join('')}</select>
+    <label for="border">Border</label><select id="border">${['solid','dashed','double','none'].map(b=>`<option ${b==d.border?'selected':''}>${b}</option>`).join('')}</select>
+    <label for="pattern">Paper pattern</label><select id="pattern">${Object.entries(PATTERNS).map(([k,v])=>`<option value="${v}" ${v==d.pattern?'selected':''}>${k}</option>`).join('')}</select>
+    <label for="effect">Paper effect</label><select id="effect">${Object.entries(EFFECTS).map(([k,v])=>`<option value="${v}" ${v==d.effect?'selected':''}>${k}</option>`).join('')}</select>
+    <label for="corner">Corner stickers</label><select id="corner">${CORNERS.map(c=>`<option value="${c}" ${c==d.corner?'selected':''}>${c||'None'}</option>`).join('')}</select>
+    <label for="head">Header sticker</label><select id="head">${HEADS.map(h=>`<option value="${h}" ${h==d.head?'selected':''}>${h||'None'}</option>`).join('')}</select>
+    <label for="ctitle">Cover title (shown before the letter opens)</label>
+    <input id="ctitle" maxlength="60" placeholder="A letter for you" value="${esc(d.coverTitle||'')}">
+    <label for="music">Background music</label>
+    <select id="music"><option value="none">None</option><option value="browse">Browse from device…</option><option value="online">Get music online…</option></select>
+    <input type="file" id="mfile" accept="audio/*" hidden>
+    <div id="mstate"></div>
+    <div id="monline" hidden>
+      <div class="row"><input id="mq" placeholder="Search free music, e.g. piano"><button class="soft" type="button" id="msearch">Search</button></div>
+      <div id="mres"></div>
+      <small>Or paste a direct https link to an audio file:</small>
+      <div class="row"><input id="murl" placeholder="https://…/song.mp3"><button class="soft" type="button" id="mlink">Use</button></div>
+      <small>Free tracks come from Openverse (Creative Commons). Credit is shown on the letter.</small>
+    </div>
+    <label for="file">Add media</label><input type="file" id="file" accept="image/*,audio/*,video/*">
+    <small>Max: images 5 MB, audio 10 MB, video 25 MB. Use “✕ Remove” on a media item to delete it.</small>
+  </aside><section>
+    <div class="tools no-print">
+      <button class="soft" onclick="fmt('bold')"><b>B</b></button><button class="soft" onclick="fmt('italic')"><i>I</i></button>
+      <button class="soft" onclick="fmt('underline')"><u>U</u></button>
+      <button class="soft" onclick="fmt('justifyLeft')">⯇</button><button class="soft" onclick="fmt('justifyCenter')">≡</button><button class="soft" onclick="fmt('justifyRight')">⯈</button>
+      <button class="soft" onclick="fmt('insertUnorderedList')">• List</button></div>
+    <div class="${pc(d)}" id="paper" style="${paperStyle(d)}"><div id="cns">${decoHTML(d.corner)}</div><div class="head" id="ph">${d.head}</div>
+      <div class="body" id="body" contenteditable="true" aria-label="Letter text">${clean(S.cur.content)||'<p>Dear …</p>'}</div></div></section></div>`;
+  const P=$('#paper');decorate();
+  document.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{S.design.paper=b.dataset.c;P.style.backgroundColor=b.dataset.c;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x==b))});
+  $('#font').onchange=e=>{S.design.font=e.target.value;P.style.fontFamily=e.target.value+',cursive'};
+  $('#border').onchange=e=>{S.design.border=e.target.value;P.className=pc(S.design)};
+  $('#pattern').onchange=e=>{S.design.pattern=e.target.value;P.className=pc(S.design)};
+  $('#effect').onchange=e=>{S.design.effect=e.target.value;P.className=pc(S.design)};
+  $('#corner').onchange=e=>{S.design.corner=e.target.value;$('#cns').innerHTML=decoHTML(e.target.value)};
+  $('#ctitle').oninput=e=>{S.design.coverTitle=e.target.value};
+  $('#head').onchange=e=>{S.design.head=e.target.value;$('#ph').textContent=e.target.value};
+  initMusic();
+  $('#body').onclick=e=>{if(e.target.classList.contains('mdel')){const w=e.target.closest('.mw');if(w.dataset.path)S.del.push(w.dataset.path);w.remove();toast('Removed. Click “Save letter” to keep this change.')}};
+  $('#file').onchange=async e=>{
+    const f=e.target.files[0];e.target.value='';if(!f)return;const t=f.type.split('/')[0];
+    if(!LIMITS[t])return toast('Please choose an image, audio or video file.');
+    if(f.size>LIMITS[t]*1048576)return toast(`${t} files can be up to ${LIMITS[t]} MB.`);
+    toast('Uploading…');const path=`${S.user.id}/${crypto.randomUUID()}.${(f.name.split('.').pop()||'bin').toLowerCase()}`;
+    const {error}=await sb.storage.from('media').upload(path,f,{contentType:f.type});if(error)return toast(error.message);
+    const url=sb.storage.from('media').getPublicUrl(path).data.publicUrl;
+    const tag=t=='image'?`<img src="${url}" alt="">`:t=='audio'?`<audio src="${url}" controls></audio>`:`<video src="${url}" controls></video>`;
+    $('#body').focus();document.execCommand('insertHTML',false,`<div class="mw" data-path="${path}">${tag}</div><p><br></p>`);decorate();toast('Added');};
+}
+const fmt=c=>{$('#body').focus();document.execCommand(c)};
+function decorate(){document.querySelectorAll('#body .mw').forEach(w=>{w.contentEditable='false';if(!w.querySelector('.mdel')){const b=document.createElement('button');b.type='button';b.className='mdel';b.textContent='✕ Remove';w.appendChild(b)}})}
+function bodyHTML(){const c=$('#body').cloneNode(true);c.querySelectorAll('.mdel').forEach(b=>b.remove());c.querySelectorAll('[contenteditable]').forEach(x=>x.removeAttribute('contenteditable'));return clean(c.innerHTML)}
+async function save(){
+  const p={title:$('#title').value||'Untitled letter',content:bodyHTML(),design:S.design,updated_at:new Date().toISOString()};
+  const r=S.cur.id?await sb.from('letters').update(p).eq('id',S.cur.id).select().single():await sb.from('letters').insert(p).select().single();
+  if(r.error)return toast(r.error.message);
+  if(S.del.length){await sb.storage.from('media').remove(S.del);S.del=[]}
+  toast('Saved');S.cur.id?S.cur=r.data:edit(r.data.id);
+}
+async function del(){
+  if(!confirm('Delete this letter for good?'))return;
+  const paths=[...(S.cur.content||'').matchAll(/data-path="([^"]+)"/g)].map(m=>m[1]);
+  if(S.cur.design?.music?.path)paths.push(S.cur.design.music.path);
+  if(paths.length)await sb.storage.from('media').remove(paths);
+  const {error}=await sb.from('letters').delete().eq('id',S.cur.id);error?toast(error.message):dash();
+}
+
+/* ---------- background music ---------- */
+let MRES=[];
+const musicKind=()=>S.design.music?(S.design.music.path?'browse':'online'):'none';
+function initMusic(){
+  const sel=$('#music'),mf=$('#mfile');
+  sel.value=musicKind();renderMusic();
+  sel.onchange=()=>{
+    $('#monline').hidden=sel.value!=='online';
+    if(sel.value==='none')setMusic(null);
+    if(sel.value==='browse')mf.click();
+  };
+  mf.addEventListener('cancel',()=>{sel.value=musicKind()});
+  mf.onchange=async e=>{
+    const f=e.target.files[0];e.target.value='';
+    if(!f){sel.value=musicKind();return}
+    if(!f.type.startsWith('audio/')){sel.value=musicKind();return toast('Please choose an audio file.')}
+    if(f.size>LIMITS.audio*1048576){sel.value=musicKind();return toast(`Music can be up to ${LIMITS.audio} MB.`)}
+    toast('Uploading music…');
+    const path=`${S.user.id}/${crypto.randomUUID()}.${(f.name.split('.').pop()||'mp3').toLowerCase()}`;
+    const {error}=await sb.storage.from('media').upload(path,f,{contentType:f.type});
+    if(error){sel.value=musicKind();return toast(error.message)}
+    setMusic({src:sb.storage.from('media').getPublicUrl(path).data.publicUrl,path,title:f.name.replace(/\.[^.]+$/,'')});
+    toast('Music added');
+  };
+  $('#msearch').onclick=searchMusic;
+  $('#mq').onkeydown=e=>{if(e.key==='Enter')searchMusic()};
+  $('#mlink').onclick=()=>{const u=$('#murl').value.trim();if(!/^https:\/\/\S+$/i.test(u))return toast('Paste a direct https link to an audio file.');setMusic({src:u,path:null,title:'Online music'})};
+}
+function setMusic(m){
+  const old=S.design.music;
+  if(old&&old.path&&(!m||m.path!==old.path))S.del.push(old.path);
+  if(m)S.design.music=m;else delete S.design.music;
+  $('#music').value=musicKind();
+  if(m)$('#monline').hidden=true;
+  renderMusic();
+}
+let pvTimer;
+const fmt2=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function renderMusic(){
+  clearInterval(pvTimer);
+  const m=S.design.music,el=$('#mstate');
+  if(!m){el.innerHTML='';return}
+  el.innerHTML=`<div class="mstate">🎵 <b>${esc(m.title||'Music')}</b>${m.credit?`<br><small>${esc(m.credit)}</small>`:''}
+    <audio id="mprev" src="${esc(m.src)}" controls preload="metadata"></audio>
+    <b>Loop section</b> <small id="cinfo"></small>
+    <div class="row"><input id="cs" type="number" min="0" step="0.1" placeholder="Start (sec)" value="${m.start||''}" aria-label="Loop start in seconds"><input id="ce" type="number" min="0" step="0.1" placeholder="End (sec)" value="${m.end||''}" aria-label="Loop end in seconds"></div>
+    <div class="row"><button class="soft" type="button" id="cst">Start = now</button><button class="soft" type="button" id="cen">End = now</button><button class="soft" type="button" id="cpv">▶ Test loop</button></div>
+    <small>Play the song above, pause where you want, then press “Start = now” or “End = now”. Leave both empty to loop the whole song.</small>
+    <button class="soft" type="button" id="mrm">Remove music</button></div>`;
+  const a=$('#mprev'),cs=$('#cs'),ce=$('#ce');
+  const sync=()=>{const s=Math.max(0,+cs.value||0);let e=Math.max(0,+ce.value||0);if(e&&e<=s+0.2)e=0;m.start=s;m.end=e;
+    $('#cinfo').textContent=e?`(${fmt2(s)} → ${fmt2(e)}, ${(e-s).toFixed(1)}s repeating)`:s?`(from ${fmt2(s)} to the end)`:''};
+  cs.oninput=ce.oninput=sync;
+  $('#cst').onclick=()=>{cs.value=a.currentTime.toFixed(1);sync()};
+  $('#cen').onclick=()=>{ce.value=a.currentTime.toFixed(1);sync()};
+  $('#cpv').onclick=()=>{if(!a.paused){a.pause();return}a.currentTime=m.start||0;a.play()};
+  a.onended=()=>{if(m.start||m.end){a.currentTime=m.start||0;a.play()}};
+  pvTimer=setInterval(()=>{if(!a.paused&&m.end&&a.currentTime>=m.end-0.03)a.currentTime=m.start||0},30);
+  $('#mrm').onclick=()=>setMusic(null);
+  sync();
+}
+async function searchMusic(){
+  const q=$('#mq').value.trim(),box=$('#mres');
+  if(!q)return toast('Type what music you want, e.g. piano.');
+  box.textContent='Searching…';
+  try{
+    const r=await fetch('https://api.openverse.org/v1/audio/?'+new URLSearchParams({q,category:'music',license:'cc0,pdm,by',page_size:'10'}));
+    if(!r.ok)throw new Error('bad');
+    MRES=(await r.json()).results.filter(x=>x.url&&x.url.startsWith('https://'));
+    if(!MRES.length){box.textContent='No results. Try another word.';return}
+    box.innerHTML=MRES.map((x,i)=>`<div class="res"><b>${esc(x.title||'Untitled')}</b><br><small>${esc(x.creator||'Unknown')} · ${esc((x.license||'').toUpperCase())}</small><audio src="${esc(x.url)}" controls preload="none"></audio><button class="soft" type="button" onclick="pickMusic(${i})">Use this</button></div>`).join('');
+  }catch{box.textContent='Could not reach the music library. You can paste a direct audio link instead.'}
+}
+function pickMusic(i){const x=MRES[i];setMusic({src:x.url,path:null,title:x.title||'Online music',credit:`${x.title||'Untitled'} by ${x.creator||'Unknown'} (CC ${(x.license||'').toUpperCase()}${x.license_version?' '+x.license_version:''}), via Openverse`})}
+function playMusic(m){
+  const s=+m.start||0,e=+m.end||0,clip=s>0||e>s,a=new Audio(m.src);
+  a.volume=0;a.loop=!clip;
+  if(clip){
+    a.currentTime=s;a.addEventListener('loadedmetadata',()=>{if(a.currentTime<s)a.currentTime=s});
+    a.onended=()=>{a.currentTime=s;a.play()};
+    setInterval(()=>{if(!a.paused&&e>s&&a.currentTime>=e-0.03)a.currentTime=s},30);
+  }
+  const b=document.createElement('button');b.className='mtoggle no-print';b.textContent='🔊';b.setAttribute('aria-label','Mute or play music');document.body.appendChild(b);
+  let t;const fade=()=>{clearInterval(t);t=setInterval(()=>{a.volume=Math.min(0.35,a.volume+0.02);if(a.volume>=0.35)clearInterval(t)},120)};
+  const start=()=>a.play().then(()=>{b.textContent='🔊';fade()}).catch(()=>{b.textContent='🔇'});
+  b.onclick=()=>{if(a.paused)start();else{a.pause();b.textContent='🔇'}};
+  start();
+}
+
+/* ---------- sharing ---------- */
+function shareModal(){
+  const code=S.cur.share_token,url=location.origin+'/l/'+code,t=encodeURIComponent(S.cur.title||'A letter for you'),u=encodeURIComponent(url);
+  const links=[['WhatsApp',`https://wa.me/?text=${t}%20${u}`],['Telegram',`https://t.me/share/url?url=${u}&text=${t}`],['Messenger',`https://www.facebook.com/dialog/send?link=${u}&app_id=0&redirect_uri=${u}`],
+    ['Facebook',`https://www.facebook.com/sharer/sharer.php?u=${u}`],['X / Twitter',`https://twitter.com/intent/tweet?text=${t}&url=${u}`],['LinkedIn',`https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
+    ['Reddit',`https://www.reddit.com/submit?url=${u}&title=${t}`],['Pinterest',`https://pinterest.com/pin/create/button/?url=${u}&description=${t}`],
+    ['Email',`mailto:?subject=${t}&body=${u}`],['SMS',`sms:?&body=${t}%20${u}`]];
+  $('#modalBody').innerHTML=`<div class="top"><h2 style="font:700 30px Caveat">Share this letter</h2><button class="soft" onclick="closeM()">Close</button></div>
+  <div class="row"><input readonly value="${url}" aria-label="Letter link"><button onclick="copy('${url}')">Copy link</button></div>
+  <div class="opts">
+    <button onclick="showQR('${url}')">▦ QR code</button><button onclick="showBar('${code}')">▌▌ Barcode</button>
+    <button onclick="copy('${code}')">🔑 Copy code</button><button onclick="nativeShare('${url}')">📲 Device share</button>
+    <button onclick="copy('<iframe src=&quot;${url}&quot; width=&quot;100%&quot; height=&quot;600&quot;></iframe>')">&lt;/&gt; Embed</button>
+    <button onclick="closeM();window.print()">🖨 Print / PDF</button>
+    ${links.map(([n,h])=>`<a href="${h}" target="_blank" rel="noopener">${n}</a>`).join('')}</div>
+  <div class="share-out" id="out">Pick a way to share. Anyone with the link can read this letter, but only you can edit it.</div>`;
+  $('#modal').classList.add('on');
+}
+const closeM=()=>$('#modal').classList.remove('on');
+const copy=async t=>{try{await navigator.clipboard.writeText(t);toast('Copied')}catch{toast('Copy failed')}};
+const nativeShare=u=>navigator.share?navigator.share({title:S.cur.title,url:u}):toast('Device share is not supported here');
+function showQR(u){
+  const q=qrcode(0,'M');q.addData(u);q.make();
+  const n=q.getModuleCount(),cell=10,pad=cell*4,size=n*cell+pad*2,c=document.createElement('canvas');
+  c.width=c.height=size;const x=c.getContext('2d');
+  x.fillStyle='#fff8d6';x.fillRect(0,0,size,size);x.fillStyle='#4a3f2a';
+  for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect(pad+k*cell,pad+r*cell,cell,cell);
+  const png=c.toDataURL('image/png'),jpg=c.toDataURL('image/jpeg',0.95);
+  $('#out').innerHTML=`<img src="${png}" alt="QR code" width="220"><p><a download="letter-qr.png" href="${png}">Download PNG</a> · <a download="letter-qr.jpg" href="${jpg}">Download JPG</a></p>`}
+function showBar(c){$('#out').innerHTML='<svg id="bc"></svg><p>Code: <b>'+c+'</b> (open /l/'+c+')</p>';
+  JsBarcode('#bc',c,{format:'CODE128',background:'#fff8d6',lineColor:'#4a3f2a',height:70})}
+
+/* ---------- public viewer (no login) ---------- */
+async function view(tok){
+  document.querySelector('header').style.display='none';
+  const {data,error}=await sb.rpc('get_public_letter',{code:tok});
+  if(error||!data||!data.length){app.innerHTML=`<div class="card empty"><h3>This letter does not exist.</h3><a href="/">Go home</a></div>`;return}
+  const l=data[0],d=safeDesign(l.design),m=d.music||null;
+  const render=()=>{app.innerHTML=`<div class="${pc(d)}" style="${paperStyle(d)}">${decoHTML(d.corner)}<div class="head">${esc(d.head)}</div>${clean(l.content)}<p style="text-align:right">— ${esc(l.author)}</p></div>
+  ${m&&m.credit?`<p class="credit">♪ ${esc(m.credit)}</p>`:''}
+  <p class="no-print" style="text-align:center"><a href="/">Make your own letter</a></p>`};
+  if(!m&&!d.coverTitle){render();return}
+  app.innerHTML=`<div class="card gate" style="background-color:${d.paper}"><div class="env">${esc(d.head||'💌')}</div><h2 style="font-family:${d.font},cursive">${esc(d.coverTitle||'A letter for you')}</h2><p>From ${esc(l.author)}</p><button id="open">Open letter${m?' ♪':''}</button></div>`;
+  $('#open').onclick=()=>{render();if(m)playMusic(m)};
+}
+
+/* ---------- boot ---------- */
+(async()=>{
+  if(!window.SUPABASE_URL||window.SUPABASE_URL.includes('YOUR-PROJECT')){app.innerHTML='<div class="card empty"><h3>Almost there</h3><p>Add your Supabase URL and key to <b>public/config.js</b>.</p></div>';return}
+  sb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+  $('#modal').onclick=e=>{if(e.target.id=='modal')closeM()};
+  const m=location.pathname.match(/^\/l\/([\w-]+)/);if(m)return view(m[1]);
+  const {data}=await sb.auth.getSession();S.user=data.session?.user||null;S.user?dash():authView();
+})();
+</script>
+</body>
+</html>
