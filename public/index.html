@@ -85,6 +85,13 @@ input,select{padding:10px 12px;border:1.5px solid var(--line);border-radius:10px
 .mrs{right:-8px;bottom:-8px;width:22px;height:22px;border-radius:6px;cursor:nwse-resize}
 .mbar{align-items:center;background:var(--cream);border:1.5px solid var(--line);border-radius:14px;padding:8px 12px}.mbar[hidden]{display:none}
 .mbar select{width:auto}.mbar input[type=range]{width:110px;padding:0}
+.paper h1{font-size:1.7em;margin:.3em 0}.paper h2{font-size:1.4em;margin:.3em 0}.paper h3{font-size:1.2em;margin:.3em 0}
+.paper blockquote{border-left:4px solid var(--honey);margin:12px 0 12px 8px;padding:2px 14px;font-style:italic}
+.paper hr{border:0;border-top:2px dashed var(--line);margin:18px 0}.paper ul,.paper ol{margin:8px 0;padding-left:28px}.paper a{color:#8a6d00}
+.rt{align-items:center;position:sticky;top:0;z-index:6;background:var(--butter);padding:6px 0}
+.rt select{width:auto;max-width:150px;padding:6px 8px}.rt button{min-width:34px}.rt button.on{background:var(--honey)}
+.clr{display:inline-flex;align-items:center;gap:4px;font-weight:700;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:3px 8px 3px 12px;cursor:pointer}
+.clr input{width:26px;height:26px;padding:0;border:0;background:none;cursor:pointer}
 </style>
 </head>
 <body>
@@ -119,11 +126,19 @@ let S={user:null,cur:null,design:{...DEF},del:[]}, sb;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const clean=h=>DOMPurify.sanitize(h||'');
-// Letters come from other users: keep only layout-related inline styles (no overlays, no fixed positioning).
+// Letters come from other users: keep only safe, formatting-related inline styles (no overlays or fixed positioning).
+const COL=/^(#[0-9a-f]{3,8}|transparent|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[\d.]+\s*)?\))$/i;
+const FAMS=()=>[...Object.values(FONTS),'cursive','serif','sans-serif','monospace'];
+const DECO=v=>/^(underline|line-through|none)( (underline|line-through))?$/.test(v);
+const STY={'text-align':v=>/^(left|right|center|justify)$/.test(v),'--w':v=>/^[\d.]+$/.test(v),'--x':v=>/^-?[\d.]+$/.test(v),'--y':v=>/^[\d.]+$/.test(v),
+  color:v=>COL.test(v),'background-color':v=>COL.test(v),'font-size':v=>/^\d{1,3}(\.\d+)?(px|pt|em|rem|%)$/.test(v),'line-height':v=>/^\d(\.\d+)?$/.test(v),
+  'font-weight':v=>/^(bold|normal|[1-9]00)$/.test(v),'font-style':v=>/^(italic|normal)$/.test(v),'text-decoration':DECO,'text-decoration-line':DECO,'-webkit-text-decoration-line':DECO,
+  'vertical-align':v=>/^(sub|super)$/.test(v),'margin-left':v=>/^\d{1,3}px$/.test(v),'font-family':v=>v.replace(/["']/g,'').split(',').every(f=>FAMS().includes(f.trim()))};
 DOMPurify.addHook('afterSanitizeAttributes',n=>{
+  if(n.tagName==='A'&&n.hasAttribute('href')){n.setAttribute('target','_blank');n.setAttribute('rel','noopener noreferrer')}
   if(!n.hasAttribute||!n.hasAttribute('style'))return;
   const keep=[];n.getAttribute('style').split(';').forEach(s=>{const i=s.indexOf(':');if(i<0)return;const k=s.slice(0,i).trim().toLowerCase(),v=s.slice(i+1).trim();
-    if(/^(text-align|--w|--x|--y)$/.test(k)&&/^[-\w.%\s]+$/.test(v))keep.push(k+':'+v)});
+    if(STY[k]&&STY[k](v))keep.push(k+':'+v)});
   keep.length?n.setAttribute('style',keep.join(';')):n.removeAttribute('style');
 });
 const paperStyle=d=>`background-color:${d.paper};font-family:${d.font},cursive`;
@@ -197,18 +212,31 @@ async function edit(id){
     <label for="file">Add media</label><input type="file" id="file" accept="image/*,audio/*,video/*">
     <small>Max: images 5 MB, audio 10 MB, video 25 MB. Click a photo, video or sound in the letter to move it, resize it, choose how text wraps around it, or remove it.</small>
   </aside><section>
-    <div class="tools no-print">
-      <button class="soft" onclick="fmt('bold')"><b>B</b></button><button class="soft" onclick="fmt('italic')"><i>I</i></button>
-      <button class="soft" onclick="fmt('underline')"><u>U</u></button>
-      <button class="soft" onclick="fmt('justifyLeft')">⯇</button><button class="soft" onclick="fmt('justifyCenter')">≡</button><button class="soft" onclick="fmt('justifyRight')">⯈</button>
-      <button class="soft" onclick="fmt('insertUnorderedList')">• List</button></div>
+    <div class="tools no-print rt" id="rtools">
+      <button class="soft" type="button" data-cmd="undo" title="Undo">↶</button><button class="soft" type="button" data-cmd="redo" title="Redo">↷</button>
+      <select id="tblock" aria-label="Text style"><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select>
+      <select id="tfont" aria-label="Font for selected text"><option value="">Font…</option>${Object.entries(FONTS).map(([k,v])=>`<option value="${v}">${k}</option>`).join('')}</select>
+      <select id="tsize" aria-label="Size for selected text"><option value="">Size…</option>${[12,14,16,18,20,24,28,32,40,48,60,72].map(n=>`<option>${n}</option>`).join('')}</select>
+      <button class="soft" type="button" data-cmd="bold" title="Bold"><b>B</b></button><button class="soft" type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+      <button class="soft" type="button" data-cmd="underline" title="Underline"><u>U</u></button><button class="soft" type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+      <button class="soft" type="button" data-cmd="subscript" title="Subscript">x₂</button><button class="soft" type="button" data-cmd="superscript" title="Superscript">x²</button>
+      <label class="clr" title="Text color">A<input type="color" id="tcol" value="#4a3f2a"></label>
+      <label class="clr" title="Highlight color">🖍<input type="color" id="thil" value="#fff176"></label><button class="soft" type="button" id="thno" title="Remove highlight">∅</button>
+      <button class="soft" type="button" data-cmd="justifyLeft" title="Align left">⯇</button><button class="soft" type="button" data-cmd="justifyCenter" title="Center">≡</button>
+      <button class="soft" type="button" data-cmd="justifyRight" title="Align right">⯈</button><button class="soft" type="button" data-cmd="justifyFull" title="Justify">☰</button>
+      <button class="soft" type="button" data-cmd="insertUnorderedList" title="Bullet list">• List</button><button class="soft" type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <button class="soft" type="button" id="tout" title="Decrease indent">⇤</button><button class="soft" type="button" id="tin" title="Increase indent">⇥</button>
+      <select id="tlh" aria-label="Line spacing"><option value="">Spacing…</option><option>1</option><option>1.15</option><option>1.5</option><option>2</option></select>
+      <button class="soft" type="button" id="tlink" title="Add link">🔗</button><button class="soft" type="button" data-cmd="insertHorizontalRule" title="Divider line">―</button>
+      <select id="temo" aria-label="Insert emoji"><option value="">😊</option>${['😊','😍','🥰','😘','😂','😢','🙏','💛','❤️','🌻','🌼','🌸','🌈','☀️','⭐','✨','🎂','🎉','🎁','💌','🕊️','🦋','🍀','☕'].map(e=>`<option>${e}</option>`).join('')}</select>
+      <button class="soft" type="button" data-cmd="removeFormat" title="Clear formatting">⌫</button></div>
     <div class="tools no-print mbar" id="mbar" hidden><b>Selected media:</b>
       <select id="mlay" aria-label="Media layout"><option value="bl">On its own line, left</option><option value="bc">On its own line, center</option><option value="br">On its own line, right</option><option value="fl">Left, text wraps around</option><option value="fr">Right, text wraps around</option><option value="bh">Behind the text (free move)</option><option value="ft">In front of the text (free move)</option></select>
       <label>Size <input type="range" id="msz" min="8" max="100" aria-label="Media size"></label>
       <button class="soft" type="button" id="mtop">⬆ Above all text</button><button class="soft" type="button" id="mbot">⬇ Below all text</button></div>
     <div class="${pc(d)}" id="paper" style="${paperStyle(d)}"><div id="cns">${decoHTML(d.corner)}</div><div class="head" id="ph">${d.head}</div>
       <div class="body" id="body" contenteditable="true" aria-label="Letter text">${clean(S.cur.content)||'<p>Dear …</p>'}</div></div></section></div>`;
-  const P=$('#paper');decorate();initMedia();
+  const P=$('#paper');decorate();initMedia();initRT();
   document.querySelectorAll('.sw').forEach(b=>b.onclick=()=>{S.design.paper=b.dataset.c;P.style.backgroundColor=b.dataset.c;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x==b))});
   $('#font').onchange=e=>{S.design.font=e.target.value;P.style.fontFamily=e.target.value+',cursive'};
   $('#border').onchange=e=>{S.design.border=e.target.value;P.className=pc(S.design)};
@@ -255,6 +283,46 @@ async function del(){
   if(S.cur.design?.music?.path)paths.push(S.cur.design.music.path);
   if(paths.length)await sb.storage.from('media').remove(paths);
   const {error}=await sb.from('letters').delete().eq('id',S.cur.id);error?toast(error.message):dash();
+}
+
+/* ---------- rich text tools ---------- */
+let SAVED=null;
+const TAGCMD=['bold','italic','underline','strikeThrough','subscript','superscript'];
+document.addEventListener('selectionchange',()=>{const b=$('#body'),s=getSelection();if(b&&s.rangeCount&&b.contains(s.anchorNode)){SAVED=s.getRangeAt(0).cloneRange();updateTools()}});
+function restoreSel(){const b=$('#body');b.focus();if(SAVED){const s=getSelection();s.removeAllRanges();s.addRange(SAVED)}}
+const cmd=(c,v=null)=>{restoreSel();document.execCommand('styleWithCSS',false,!TAGCMD.includes(c));document.execCommand(c,false,v);updateTools()};
+function updateTools(){
+  const rt=$('#rtools');if(!rt)return;
+  rt.querySelectorAll('[data-cmd]').forEach(b=>{let on=false;try{on=document.queryCommandState(b.dataset.cmd)}catch{}b.classList.toggle('on',!!on)});
+  try{const f=(document.queryCommandValue('formatBlock')||'').toLowerCase().replace(/[<>]/g,'');$('#tblock').value=['h1','h2','h3','blockquote'].includes(f)?f:'p'}catch{}
+}
+function eachBlock(fn){
+  restoreSel();const b=$('#body'),s=getSelection();if(!s.rangeCount)return;const r=s.getRangeAt(0);
+  [...b.childNodes].filter(n=>r.intersectsNode(n)).forEach(n=>{
+    if(n.nodeType===3){if(!n.textContent.trim())return;const p=document.createElement('p');n.replaceWith(p);p.appendChild(n);fn(p)}
+    else if(n.nodeType===1&&!n.classList.contains('mw'))fn(n)});
+}
+function setSize(px){
+  if(!SAVED||SAVED.collapsed)return toast('Select some text first, then choose a size.');
+  restoreSel();document.execCommand('styleWithCSS',false,false);document.execCommand('fontSize',false,'7');
+  $('#body').querySelectorAll('font[size="7"]').forEach(f=>{const s=document.createElement('span');s.style.fontSize=px+'px';while(f.firstChild)s.appendChild(f.firstChild);f.replaceWith(s)});
+}
+function initRT(){
+  const rt=$('#rtools'),body=$('#body');
+  rt.addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
+  rt.addEventListener('click',e=>{const b=e.target.closest('[data-cmd]');if(b)cmd(b.dataset.cmd)});
+  $('#tblock').onchange=e=>cmd('formatBlock','<'+e.target.value+'>');
+  $('#tfont').onchange=e=>{if(e.target.value)cmd('fontName',e.target.value);e.target.value=''};
+  $('#tsize').onchange=e=>{if(e.target.value)setSize(e.target.value);e.target.value=''};
+  $('#tcol').onchange=e=>cmd('foreColor',e.target.value);
+  $('#thil').onchange=e=>cmd('hiliteColor',e.target.value);
+  $('#thno').onclick=()=>cmd('hiliteColor','transparent');
+  $('#tin').onclick=()=>eachBlock(k=>{k.style.marginLeft=Math.min(200,(parseInt(k.style.marginLeft)||0)+32)+'px'});
+  $('#tout').onclick=()=>eachBlock(k=>{const m=Math.max(0,(parseInt(k.style.marginLeft)||0)-32);m?k.style.marginLeft=m+'px':k.style.removeProperty('margin-left')});
+  $('#tlh').onchange=e=>{if(e.target.value)eachBlock(k=>{k.style.lineHeight=e.target.value});e.target.value=''};
+  $('#tlink').onclick=()=>{const u=prompt('Link address (starts with https://)');if(!u)return;if(!/^https?:\/\//i.test(u))return toast('The address must start with http:// or https://');cmd('createLink',u)};
+  $('#temo').onchange=e=>{if(e.target.value)cmd('insertText',e.target.value);e.target.value=''};
+  body.addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'))});
 }
 
 /* ---------- media layout: move, resize, wrap ---------- */
