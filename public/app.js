@@ -1,4 +1,4 @@
-/* Sunny Letters: all page logic (login, dashboard, editor, sharing, viewer).
+/* Idea0: all page logic (login, dashboard, editor, sharing, viewer).
    Needs config.js (Supabase keys) and the libraries loaded in index.html first. */
 const $=(s,r=document)=>r.querySelector(s), app=$('#app');
 const COLORS=['#fff8d6','#ffefaa','#fdeaa8','#fce4c4','#f7cfc4','#e3efd3','#dbeaf2','#ffffff'];
@@ -71,7 +71,7 @@ function nav(){$('#nav').innerHTML=S.user?`<span>Hi, ${esc(uname())} </span><but
 
 /* ---------- auth ---------- */
 function authView(mode='login'){
-  nav();const reg=mode==='register';
+  nav();document.title='Idea0';const reg=mode==='register';
   app.innerHTML=`<div class="card auth"><h2>${reg?'Create your account':'Welcome back'}</h2>
   ${reg?'<label for="n">Name</label><input id="n" autocomplete="name">':''}
   <label for="e">Email</label><input id="e" type="email" autocomplete="email">
@@ -92,7 +92,7 @@ function authView(mode='login'){
 
 /* ---------- dashboard ---------- */
 async function dash(){
-  nav();const {data:ls,error}=await sb.from('letters').select('id,title,design,updated_at').order('updated_at',{ascending:false});
+  nav();document.title='Idea0';const {data:ls,error}=await sb.from('letters').select('id,title,design,updated_at').order('updated_at',{ascending:false});
   if(error)return toast(error.message);
   app.innerHTML=`<div class="top"><h2>My letters</h2><button onclick="edit()">✍ Make a letter</button></div>`+
   (ls.length?`<div class="grid">${ls.map(l=>`<div class="card mini" style="background-color:${safeDesign(l.design).paper}" onclick="edit('${l.id}')">
@@ -169,6 +169,7 @@ async function edit(id){
   $('#effect').onchange=e=>{S.design.effect=e.target.value;P.className=pc(S.design)};
   $('#corner').onchange=e=>{S.design.corner=e.target.value;$('#cns').innerHTML=decoHTML(e.target.value)};
   $('#ctitle').oninput=e=>{S.design.coverTitle=e.target.value};
+  document.title=S.cur.title||'New letter';$('#title').oninput=e=>{document.title=e.target.value||'New letter'};
   $('#head').onchange=e=>{S.design.head=e.target.value;$('#ph').textContent=e.target.value};
   initMusic();
   $('#body').onclick=e=>{
@@ -423,8 +424,9 @@ function showBar(c){$('#out').innerHTML='<svg id="bc"></svg><p>Code: <b>'+c+'</b
 async function view(tok){
   document.querySelector('header').style.display='none';
   const {data,error}=await sb.rpc('get_public_letter',{code:tok});
-  if(error||!data||!data.length){app.innerHTML=`<div class="card empty"><h3>This letter does not exist.</h3><a href="/">Go home</a></div>`;return}
+  if(error||!data||!data.length){document.title='Idea0';app.innerHTML=`<div class="card empty"><h3>This letter does not exist.</h3><a href="/">Go home</a></div>`;return}
   const l=data[0],d=safeDesign(l.design),m=d.music||null;
+  document.title=l.title||'A letter for you';   // browser tab shows the letter's own title
   const render=()=>{app.innerHTML=`<div class="${pc(d)}" style="${paperStyle(d)}">${decoHTML(d.corner)}<div class="head">${esc(d.head)}</div><div class="body vb">${clean(l.content)}</div><p style="text-align:right">— ${esc(l.author)}</p></div>
   ${m&&m.credit?`<p class="credit">♪ ${esc(m.credit)}</p>`:''}
   <p class="no-print" style="text-align:center"><a href="/">Make your own letter</a></p>`};

@@ -1,4 +1,4 @@
-# Idea0: Packet
+# ☀ Idea0
 
 A letter-making website with a soft-yellow theme. People sign up, design a letter, add photos / audio / video and background music, edit it any time, and share it in many ways. Letters live in a PostgreSQL database (Supabase), and the website itself is plain static files, so it hosts for free on Surge with no server to keep awake.
 
@@ -11,12 +11,13 @@ A letter-making website with a soft-yellow theme. People sign up, design a lette
 - **Background music:** choose None, Browse from device, or Get music online (free Creative Commons search from Openverse, or paste a direct https link). Pick a start and end time and only that part repeats. Music fades in softly and loops.
 - **Cover:** the reader first sees a cover with a title the maker chooses (default "A letter for you"). Clicking **Open letter** shows the letter and starts the music. The cover appears when a letter has music or a custom cover title.
 - **Sharing:** link, QR code (download as PNG or JPG), Code 128 barcode, copy code, device share sheet, embed code, print / PDF, WhatsApp, Telegram, Messenger, Facebook, X, LinkedIn, Reddit, Pinterest, email and SMS. Shared letters open at `/l/<code>` without logging in.
+- **Tab title:** the browser tab shows the letter's own title when someone opens a shared letter (and while you edit it). Other pages show "Idea0". Link previews in apps like WhatsApp can't show it, because those previews don't run the page's JavaScript.
 - **Phone friendly:** the letter comes first, and "Text tools" and "Design your letter" are dropdowns that start collapsed on every screen. Tap the **Show** button on either one to open it.
 
 ## How it works
 - **Website:** static files in `public/`, hosted on **Surge**.
 - **Backend:** **Supabase** only. It provides the PostgreSQL database, login, file storage and the access rules (Row Level Security). There is no server of your own.
-- **Keepalive:** a free GitHub Actions job queries the database every 3 days, because Supabase pauses free projects after about a week of inactivity.
+- **Keepalive:** a free GitHub Actions job queries the database every day, because Supabase pauses free projects after about a week of inactivity.
 
 ## Project structure
 ```
