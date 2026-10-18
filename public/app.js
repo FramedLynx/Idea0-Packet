@@ -1,10 +1,35 @@
-/* Idea0: all page logic (login, dashboard, editor, sharing, viewer).
+/* Sunny Letters: all page logic (login, dashboard, editor, sharing, viewer).
    Needs config.js (Supabase keys) and the libraries loaded in index.html first. */
 const $=(s,r=document)=>r.querySelector(s), app=$('#app');
 const COLORS=['#fff8d6','#ffefaa','#fdeaa8','#fce4c4','#f7cfc4','#e3efd3','#dbeaf2','#ffffff'];
 const FONTS={'Handwritten':'Caveat','Elegant script':'Dancing Script','Formal script':'Great Vibes','Playful script':'Pacifico','Notebook':'Indie Flower','Neat print':'Patrick Hand','Quick note':'Shadows Into Light','Tiny caps':'Amatic SC','Classic serif':'Lora','Fancy serif':'Playfair Display','Book':'Merriweather','Typewriter':'Courier Prime','Round':'Quicksand','Friendly':'Nunito'};
 const HEADS=['','🌻','💌','☀️','🌼','🎂','💛','🕊️'];
 const LIMITS={image:5,audio:10,video:25}; // MB per file
+const ICONS={
+  undo:'<polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>',
+  redo:'<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
+  bold:'<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/>',
+  italic:'<line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/>',
+  underline:'<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/>',
+  strike:'<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/>',
+  sub:'<path d="m4 5 8 8"/><path d="m12 5-8 8"/><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"/>',
+  sup:'<path d="m4 19 8-8"/><path d="m12 19-8-8"/><path d="M20 12h-4c0-1.5.442-2 1.5-2.5S20 8.334 20 7.002c0-.472-.17-.93-.484-1.29a2.105 2.105 0 0 0-2.617-.436c-.42.239-.738.614-.899 1.072"/>',
+  color:'<path d="M5 17 12 3l7 14"/><path d="M8 12h8"/>',
+  mark:'<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
+  nomark:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+  left:'<line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/>',
+  center:'<line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/>',
+  right:'<line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/>',
+  justify:'<line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/>',
+  ul:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  ol:'<line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  outdent:'<polyline points="7 8 3 12 7 16"/><line x1="21" y1="12" x2="11" y2="12"/><line x1="21" y1="6" x2="11" y2="6"/><line x1="21" y1="18" x2="11" y2="18"/>',
+  indent:'<polyline points="3 8 7 12 3 16"/><line x1="21" y1="12" x2="11" y2="12"/><line x1="21" y1="6" x2="11" y2="6"/><line x1="21" y1="18" x2="11" y2="18"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  rule:'<path d="M3 12h4M10 12h4M17 12h4"/>',
+  clear:'<path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><path d="m15 15 5 5"/><path d="m20 15-5 5"/>'
+};
+const IC=n=>`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const DEF={paper:'#fff8d6',font:'Caveat',border:'solid',head:'💌',pattern:'none',effect:'none',corner:'',coverTitle:''};
 const PATTERNS={'Plain':'none','Notebook lines':'lined','Grid':'grid','Polka dots':'dots','Soft stripes':'stripes','Watercolor':'wash','Confetti':'confetti','Gingham':'gingham'};
 const EFFECTS={'None':'none','Tape on top':'tape','Folded corner':'fold','Slight tilt':'tilt','Lifted shadow':'lift'};
@@ -109,24 +134,26 @@ async function edit(id){
     <label for="file">Add media</label><input type="file" id="file" accept="image/*,audio/*,video/*">
     <small>Max: images 5 MB, audio 10 MB, video 25 MB. Click a photo, video or sound in the letter to move it, resize it, choose how text wraps around it, or remove it.</small>
   </details></aside><section>
-    <details class="tdrop no-print" id="tdrop"><summary>✎ Text tools</summary><div class="tools rt" id="rtools">
-      <button class="soft" type="button" data-cmd="undo" title="Undo">↶</button><button class="soft" type="button" data-cmd="redo" title="Redo">↷</button>
-      <select id="tblock" aria-label="Text style"><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select>
-      <select id="tfont" aria-label="Font for selected text"><option value="">Font…</option>${Object.entries(FONTS).map(([k,v])=>`<option value="${v}">${k}</option>`).join('')}</select>
-      <select id="tsize" aria-label="Size for selected text"><option value="">Size…</option>${[12,14,16,18,20,24,28,32,40,48,60,72].map(n=>`<option>${n}</option>`).join('')}</select>
-      <button class="soft" type="button" data-cmd="bold" title="Bold"><b>B</b></button><button class="soft" type="button" data-cmd="italic" title="Italic"><i>I</i></button>
-      <button class="soft" type="button" data-cmd="underline" title="Underline"><u>U</u></button><button class="soft" type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
-      <button class="soft" type="button" data-cmd="subscript" title="Subscript">x₂</button><button class="soft" type="button" data-cmd="superscript" title="Superscript">x²</button>
-      <label class="clr" title="Text color">A<input type="color" id="tcol" value="#4a3f2a"></label>
-      <label class="clr" title="Highlight color">🖍<input type="color" id="thil" value="#fff176"></label><button class="soft" type="button" id="thno" title="Remove highlight">∅</button>
-      <button class="soft" type="button" data-cmd="justifyLeft" title="Align left">⯇</button><button class="soft" type="button" data-cmd="justifyCenter" title="Center">≡</button>
-      <button class="soft" type="button" data-cmd="justifyRight" title="Align right">⯈</button><button class="soft" type="button" data-cmd="justifyFull" title="Justify">☰</button>
-      <button class="soft" type="button" data-cmd="insertUnorderedList" title="Bullet list">• List</button><button class="soft" type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
-      <button class="soft" type="button" id="tout" title="Decrease indent">⇤</button><button class="soft" type="button" id="tin" title="Increase indent">⇥</button>
-      <select id="tlh" aria-label="Line spacing"><option value="">Spacing…</option><option>1</option><option>1.15</option><option>1.5</option><option>2</option></select>
-      <button class="soft" type="button" id="tlink" title="Add link">🔗</button><button class="soft" type="button" data-cmd="insertHorizontalRule" title="Divider line">―</button>
-      <select id="temo" aria-label="Insert emoji"><option value="">😊</option>${['😊','😍','🥰','😘','😂','😢','🙏','💛','❤️','🌻','🌼','🌸','🌈','☀️','⭐','✨','🎂','🎉','🎁','💌','🕊️','🦋','🍀','☕'].map(e=>`<option>${e}</option>`).join('')}</select>
-      <button class="soft" type="button" data-cmd="removeFormat" title="Clear formatting">⌫</button></div></details>
+    <details class="tdrop no-print" id="tdrop"><summary>✎ Text tools</summary>
+    <div class="rt" id="rtools" role="toolbar" aria-label="Text formatting">
+      <div class="tg" role="group" aria-label="History"><button class="tb" type="button" data-cmd="undo" title="Undo (Ctrl+Z)" aria-label="Undo">${IC('undo')}</button><button class="tb" type="button" data-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">${IC('redo')}</button></div>
+      <div class="tg" role="group" aria-label="Text style">
+        <select id="tblock" aria-label="Text style"><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option></select>
+        <select id="tfont" aria-label="Font for selected text"><option value="">Font</option>${Object.entries(FONTS).map(([k,v])=>`<option value="${v}">${k}</option>`).join('')}</select>
+        <select id="tsize" aria-label="Size for selected text"><option value="">Size</option>${[12,14,16,18,20,24,28,32,40,48,60,72].map(n=>`<option>${n}</option>`).join('')}</select></div>
+      <div class="tg" role="group" aria-label="Character formatting"><button class="tb" type="button" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold">${IC('bold')}</button><button class="tb" type="button" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic">${IC('italic')}</button><button class="tb" type="button" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline">${IC('underline')}</button><button class="tb" type="button" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough">${IC('strike')}</button><button class="tb" type="button" data-cmd="subscript" title="Subscript" aria-label="Subscript">${IC('sub')}</button><button class="tb" type="button" data-cmd="superscript" title="Superscript" aria-label="Superscript">${IC('sup')}</button></div>
+      <div class="tg" role="group" aria-label="Colors">
+        <label class="tb clr" title="Text color" style="--c:#4a3f2a">${IC('color')}<span class="bar"></span><input type="color" id="tcol" value="#4a3f2a" aria-label="Text color"></label>
+        <label class="tb clr" title="Highlight color" style="--c:#fff176">${IC('mark')}<span class="bar"></span><input type="color" id="thil" value="#fff176" aria-label="Highlight color"></label>
+        <button class="tb" type="button" id="thno" title="Remove highlight" aria-label="Remove highlight">${IC('nomark')}</button></div>
+      <div class="tg" role="group" aria-label="Alignment"><button class="tb" type="button" data-cmd="justifyLeft" title="Align left" aria-label="Align left">${IC('left')}</button><button class="tb" type="button" data-cmd="justifyCenter" title="Center" aria-label="Center">${IC('center')}</button><button class="tb" type="button" data-cmd="justifyRight" title="Align right" aria-label="Align right">${IC('right')}</button><button class="tb" type="button" data-cmd="justifyFull" title="Justify" aria-label="Justify">${IC('justify')}</button></div>
+      <div class="tg" role="group" aria-label="Lists and spacing"><button class="tb" type="button" data-cmd="insertUnorderedList" title="Bullet list" aria-label="Bullet list">${IC('ul')}</button><button class="tb" type="button" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">${IC('ol')}</button>
+        <button class="tb" type="button" id="tout" title="Decrease indent" aria-label="Decrease indent">${IC('outdent')}</button><button class="tb" type="button" id="tin" title="Increase indent" aria-label="Increase indent">${IC('indent')}</button>
+        <select id="tlh" aria-label="Line spacing"><option value="">↕ Spacing</option><option>1</option><option>1.15</option><option>1.5</option><option>2</option></select></div>
+      <div class="tg" role="group" aria-label="Insert">
+        <button class="tb" type="button" id="tlink" title="Add link" aria-label="Add link">${IC('link')}</button><button class="tb" type="button" data-cmd="insertHorizontalRule" title="Divider line" aria-label="Divider line">${IC('rule')}</button>
+        <select id="temo" aria-label="Insert emoji"><option value="">😊</option>${['😊','😍','🥰','😘','😂','😢','🙏','💛','❤️','🌻','🌼','🌸','🌈','☀️','⭐','✨','🎂','🎉','🎁','💌','🕊️','🦋','🍀','☕'].map(e=>`<option>${e}</option>`).join('')}</select><button class="tb" type="button" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">${IC('clear')}</button></div>
+    </div></details>
     <div class="tools no-print mbar" id="mbar" hidden><b>Selected media:</b>
       <select id="mlay" aria-label="Media layout"><option value="bl">On its own line, left</option><option value="bc">On its own line, center</option><option value="br">On its own line, right</option><option value="fl">Left, text wraps around</option><option value="fr">Right, text wraps around</option><option value="bh">Behind the text (free move)</option><option value="ft">In front of the text (free move)</option></select>
       <label>Size <input type="range" id="msz" min="8" max="100" aria-label="Media size"></label>
@@ -212,8 +239,8 @@ function initRT(){
   $('#tblock').onchange=e=>cmd('formatBlock','<'+e.target.value+'>');
   $('#tfont').onchange=e=>{if(e.target.value)cmd('fontName',e.target.value);e.target.value=''};
   $('#tsize').onchange=e=>{if(e.target.value)setSize(e.target.value);e.target.value=''};
-  $('#tcol').onchange=e=>cmd('foreColor',e.target.value);
-  $('#thil').onchange=e=>cmd('hiliteColor',e.target.value);
+  $('#tcol').onchange=e=>{e.target.parentElement.style.setProperty('--c',e.target.value);cmd('foreColor',e.target.value)};
+  $('#thil').onchange=e=>{e.target.parentElement.style.setProperty('--c',e.target.value);cmd('hiliteColor',e.target.value)};
   $('#thno').onclick=()=>cmd('hiliteColor','transparent');
   $('#tin').onclick=()=>eachBlock(k=>{k.style.marginLeft=Math.min(200,(parseInt(k.style.marginLeft)||0)+32)+'px'});
   $('#tout').onclick=()=>eachBlock(k=>{const m=Math.max(0,(parseInt(k.style.marginLeft)||0)-32);m?k.style.marginLeft=m+'px':k.style.removeProperty('margin-left')});
