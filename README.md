@@ -23,12 +23,19 @@ A letter-making website with a soft-yellow theme. People sign up, design a lette
 ```
 letter-site-supabase/
 ├── public/                   everything that gets uploaded to Surge
-│   ├── index.html            page skeleton and the libraries it loads (HTML)
+│   ├── index.html            page skeleton, meta tags and the libraries it loads (HTML)
 │   ├── styles.css            all styling; colors are the variables at the top (CSS)
-│   ├── app.js                all page logic: login, editor, sharing, viewer (JavaScript)
-│   ├── config.js             YOUR Supabase URL and publishable key (you create this)
+│   ├── app.js                all page logic: landing, login, editor, sharing, viewer (JavaScript)
+│   ├── analytics.js          optional GoatCounter analytics (off until you add a code)
+│   ├── config.js             YOUR Supabase URL, key and analytics code (you create this)
 │   ├── config.example.js     template for config.js
-│   └── 200.html              copy of index.html so /l/<code> share links work on Surge
+│   ├── 200.html              copy of index.html so /l/<code> share links work on Surge
+│   ├── 404.html              "page not found" page
+│   ├── privacy.html          privacy policy
+│   ├── robots.txt, sitemap.xml          search engine files
+│   ├── og-image.png          share-preview image (1200x630)
+│   └── favicon.ico, favicon.svg, favicon-16x16.png, favicon-32x32.png, apple-touch-icon.png,
+│       android-chrome-192x192.png, android-chrome-512x512.png, site.webmanifest     icon set
 ├── supabase/schema.sql       tables, security rules, share-code function, media bucket
 ├── .github/workflows/keepalive.yml   keeps the free Supabase project awake
 ├── .gitignore
@@ -91,6 +98,19 @@ Optional: add `public/config.js` to `.gitignore` to keep it out of GitHub. On Wi
 Set-Content -Path .gitignore -Value "node_modules",".DS_Store","public/config.js" -Encoding ascii
 ```
 (`echo ... >> .gitignore` in PowerShell saves it as UTF-16, which Git cannot read.) If `config.js` was already committed, run `git rm --cached public/config.js` once.
+
+## Website basics: SEO, analytics, privacy and 404
+- **Landing page:** visitors who are not logged in see a headline and a **Start writing** button right at the top, with a login button beside it.
+- **Page titles and descriptions:** every page sets its own browser-tab title and description. A shared letter's tab shows the letter's own title. Login, dashboard, editor and shared letters are marked `noindex`, so only the home page and privacy page are meant for search engines.
+- **Share preview:** `og-image.png` plus Open Graph and Twitter tags give link previews a picture and text. Messaging apps do not run JavaScript, so every link shows the home page preview.
+- **Icons:** a full favicon set and `site.webmanifest` are included.
+- **robots.txt and sitemap.xml:** search engines may read the site but not `/l/` (private letters). After deploying, you can submit `https://YOUR-SITE/sitemap.xml` in Google Search Console.
+- **404 page:** unknown addresses show a friendly "page not found" screen. Surge uses `200.html` for every unknown address, so the app shows this page itself. `404.html` is also included as a standalone copy.
+- **Alt text:** photos get a description from their file name. Select a photo in the editor and use the "Describe this image" box to write a better one. Older photos without a description get a generic one when displayed.
+- **Loading states:** spinners and placeholder cards show while pages, letters and uploads load, and buttons say "Saving…" or "Please wait…" while working.
+- **Privacy policy:** `privacy.html`. **Replace the text `[replace with your contact email]` with your real email before going public**, and have the policy reviewed, since it is a general template and not legal advice.
+- **Analytics (GoatCounter):** free, no cookies, respects Do Not Track, and never records share codes or letter titles. To turn it on, sign up at goatcounter.com, pick a site code, and add this line to `public/config.js`: `window.GOATCOUNTER_CODE = 'yourcode';`. Without it, no analytics script loads. If you decide never to use analytics, remove the GoatCounter lines from `privacy.html`.
+- **Your website address:** these files contain the address `https://idea0-packet.surge.sh`: `index.html`, `privacy.html`, `404.html`, `robots.txt` and `sitemap.xml`. If you change the address, replace it in those five files.
 
 ## Updating the site later
 ```

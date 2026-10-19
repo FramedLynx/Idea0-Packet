@@ -44,7 +44,7 @@ function safeDesign(r){
     corner:pick(r.corner,OPT.corner,''),head:HEADS.includes(r.head)?r.head:'',coverTitle:String(r.coverTitle||'').slice(0,60),...(m?{music:m}:{})};
 }
 const pc=d=>`paper b-${d.border} pt-${d.pattern} fx-${d.effect}`;
-const decoHTML=e=>e?['cn1','cn2','cn3','cn4'].map(c=>`<span class="cn ${c}">${esc(e)}</span>`).join(''):'';
+const decoHTML=e=>e?['cn1','cn2','cn3','cn4'].map(c=>`<span class="cn ${c}" aria-hidden="true">${esc(e)}</span>`).join(''):'';
 let S={user:null,cur:null,design:{...DEF},del:[]}, sb;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600)};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -67,11 +67,54 @@ DOMPurify.addHook('afterSanitizeAttributes',n=>{
 const paperStyle=d=>`background-color:${d.paper};font-family:${d.font},cursive`;
 const uname=()=>S.user?.user_metadata?.name||S.user?.email||'';
 async function logout(){await sb.auth.signOut();location.href='/'}
-function nav(){$('#nav').innerHTML=S.user?`<span>Hi, ${esc(uname())} </span><button class="soft" onclick="dash()">My letters</button> <button class="soft" onclick="logout()">Log out</button>`:''}
+function nav(){$('#nav').innerHTML=S.user?`<span>Hi, ${esc(uname())} </span><button class="soft" onclick="dash()">My letters</button> <button class="soft" onclick="logout()">Log out</button>`:`<button class="soft" onclick="authView('login')">Log in</button> <button onclick="authView('register')">Sign up</button>`}
+
+/* ---------- loading states, page meta, analytics hook ---------- */
+const spinner=(msg='Loading…')=>`<div class="loading" role="status" aria-live="polite"><div class="spin"></div><p>${msg}</p></div>`;
+const skeleton=()=>`<div class="top"><h2>My letters</h2></div><div class="grid" role="status" aria-live="polite" aria-label="Loading your letters">${'<div class="skel"></div>'.repeat(3)}</div>`;
+const DEFAULT_DESC='Design a letter with your own paper, fonts, photos and music, then share it by link, QR code or barcode. Free to start.';
+const track=(p,t)=>{if(window.trackPage)window.trackPage(p,t)};
+function metaTag(attr,key,val){let el=document.head.querySelector(`meta[${attr}="${key}"]`);if(!el){el=document.createElement('meta');el.setAttribute(attr,key);document.head.appendChild(el)}el.setAttribute('content',val)}
+// Sets the browser tab title, description, robots rule, share-preview text and canonical address for the current view.
+function setMeta({title,desc=DEFAULT_DESC,robots='noindex,nofollow',path=location.pathname,tpath,ttitle}){
+  const url=location.origin+path;document.title=title;
+  metaTag('name','description',desc);metaTag('name','robots',robots);
+  metaTag('property','og:title',title);metaTag('property','og:description',desc);metaTag('property','og:url',url);
+  metaTag('name','twitter:title',title);metaTag('name','twitter:description',desc);
+  let c=document.head.querySelector('link[rel=canonical]');if(!c){c=document.createElement('link');c.rel='canonical';document.head.appendChild(c)}c.href=url;
+  track(tpath||path,ttitle||title);
+}
+function notFound(kind='page'){
+  document.querySelector('header').style.display='';nav();
+  setMeta({title:'Page not found | Idea0',desc:'This page could not be found.',tpath:'/404',ttitle:'404 not found'});
+  const letter=kind==='letter';
+  app.innerHTML=`<div class="card empty notfound"><p class="code404" aria-hidden="true">404</p><h1>${letter?'We couldn’t find that letter':'We couldn’t find that page'}</h1><p>${letter?'The link may be incomplete, or the letter may have been deleted.':'The link may be broken, or the page may have moved.'}</p><a class="btn" href="/">Back to Idea0</a></div>`;
+}
+function landing(){
+  nav();
+  setMeta({title:'Idea0: write beautiful letters and share them anywhere',robots:'index,follow',path:'/',tpath:'/',ttitle:'Home'});
+  app.innerHTML=`<section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Free online letter maker</p>
+      <h1>Write letters worth keeping.</h1>
+      <p class="lead">Pick your paper, fonts and stickers, add photos and a song, then share your letter by link, QR code or barcode.</p>
+      <div class="cta"><button class="big" id="cta-start">Start writing, it’s free</button><button class="soft big" id="cta-login">I already have an account</button></div>
+      <p class="fine">No credit card needed. Works on your phone and your computer.</p>
+    </div>
+    <div class="hero-art" aria-hidden="true"><div class="mock"><span class="mock-sticker">🌻</span><p class="mock-hand">Dear Mom,</p><p class="mock-hand">Thank you for everything. I made this letter just for you…</p><p class="mock-sign">— Lia</p><span class="mock-chip">♪ Now playing</span></div></div>
+  </section>
+  <section class="features" aria-label="What you can do">
+    <article class="card"><h2>Design it your way</h2><p>Choose paper colors, patterns, 14 fonts and corner stickers, then format your words like in a word processor.</p></article>
+    <article class="card"><h2>Add photos, video and music</h2><p>Drop in media, place it anywhere on the page, and pick a background song that plays when your letter is opened.</p></article>
+    <article class="card"><h2>Share it anywhere</h2><p>Send a link, show a QR code or barcode, or share to WhatsApp, Telegram, email and more.</p></article>
+  </section>`;
+  $('#cta-start').onclick=()=>authView('register');$('#cta-login').onclick=()=>authView('login');
+}
 
 /* ---------- auth ---------- */
 function authView(mode='login'){
-  nav();document.title='Idea0';const reg=mode==='register';
+  const reg=mode==='register';nav();
+  setMeta({title:reg?'Create your free account | Idea0':'Log in | Idea0',desc:reg?'Create a free Idea0 account to design letters and share them with anyone.':'Log in to your Idea0 account to view and edit your letters.',tpath:reg?'/signup':'/login',ttitle:reg?'Sign up':'Log in'});
   app.innerHTML=`<div class="card auth"><h2>${reg?'Create your account':'Welcome back'}</h2>
   ${reg?'<label for="n">Name</label><input id="n" autocomplete="name">':''}
   <label for="e">Email</label><input id="e" type="email" autocomplete="email">
@@ -81,19 +124,22 @@ function authView(mode='login'){
   $('#sw').onclick=e=>{e.preventDefault();authView(reg?'login':'register')};
   $('#go').onclick=async()=>{
     const email=$('#e').value.trim(),password=$('#p').value;$('#err').textContent='';
+    const go=$('#go');go.disabled=true;go.textContent='Please wait…';
     try{
       if(reg&&(!$('#n').value.trim()||password.length<8))throw new Error('Enter your name and a password of 8+ characters.');
       const r=reg?await sb.auth.signUp({email,password,options:{data:{name:$('#n').value.trim()}}}):await sb.auth.signInWithPassword({email,password});
       if(r.error)throw r.error;
       if(!r.data.session){$('#err').textContent='Check your email to confirm your account, then log in.';return}
       S.user=r.data.user;dash();
-    }catch(e){$('#err').textContent=e.message}};
+    }catch(e){$('#err').textContent=e.message}
+    finally{go.disabled=false;go.textContent=reg?'Sign up':'Log in'}};
 }
 
 /* ---------- dashboard ---------- */
 async function dash(){
-  nav();document.title='Idea0';const {data:ls,error}=await sb.from('letters').select('id,title,design,updated_at').order('updated_at',{ascending:false});
-  if(error)return toast(error.message);
+  nav();setMeta({title:'My letters | Idea0',desc:'Your letters on Idea0.',tpath:'/app/letters',ttitle:'My letters'});app.innerHTML=skeleton();
+  const {data:ls,error}=await sb.from('letters').select('id,title,design,updated_at').order('updated_at',{ascending:false});
+  if(error){app.innerHTML=`<div class="card empty"><h3>We couldn’t load your letters</h3><p>${esc(error.message)}</p><button onclick="dash()">Try again</button></div>`;return}
   app.innerHTML=`<div class="top"><h2>My letters</h2><button onclick="edit()">✍ Make a letter</button></div>`+
   (ls.length?`<div class="grid">${ls.map(l=>`<div class="card mini" style="background-color:${safeDesign(l.design).paper}" onclick="edit('${l.id}')">
     <b>${esc(l.design.head||'')} ${esc(l.title)}</b><small>Edited ${new Date(l.updated_at).toLocaleDateString()}</small></div>`).join('')}</div>`
@@ -102,14 +148,14 @@ async function dash(){
 
 /* ---------- designer / editor ---------- */
 async function edit(id){
-  nav();S.del=[];
-  if(id){const {data,error}=await sb.from('letters').select('*').eq('id',id).single();if(error)return toast(error.message);S.cur=data;S.design=safeDesign(data.design)}
+  nav();S.del=[];if(id)app.innerHTML=spinner('Opening your letter…');
+  if(id){const {data,error}=await sb.from('letters').select('*').eq('id',id).single();if(error){toast(error.message);return dash()}S.cur=data;S.design=safeDesign(data.design)}
   else{S.cur={id:null,title:'',content:''};S.design={...DEF}}
   const d=S.design;
   app.innerHTML=`<div class="top"><h2>${id?'Edit letter':'New letter'}</h2>
     <div class="row"><button class="soft" onclick="dash()">Back</button>
     ${id?'<button class="soft" onclick="del()">Delete</button><button class="soft" onclick="shareModal()">Share</button>':''}
-    <button onclick="save()">Save letter</button></div></div>
+    <button id="savebtn" onclick="save()">Save letter</button></div></div>
   <div class="editor"><aside class="card panel"><label for="title">Title</label><input id="title" value="${esc(S.cur.title)}" placeholder="Dear Mom"><details id="dpanel"><summary>🎨 Design your letter</summary>
     <label>Paper color</label><div class="swatches">${COLORS.map(c=>`<button class="sw ${c==d.paper?'on':''}" style="background:${c}" data-c="${c}" aria-label="Paper ${c}"></button>`).join('')}</div>
     <label for="font">Handwriting</label><select id="font">${Object.entries(FONTS).map(([k,v])=>`<option value="${v}" ${v==d.font?'selected':''}>${k}</option>`).join('')}</select>
@@ -157,6 +203,7 @@ async function edit(id){
     <div class="tools no-print mbar" id="mbar" hidden><b>Selected media:</b>
       <select id="mlay" aria-label="Media layout"><option value="bl">On its own line, left</option><option value="bc">On its own line, center</option><option value="br">On its own line, right</option><option value="fl">Left, text wraps around</option><option value="fr">Right, text wraps around</option><option value="bh">Behind the text (free move)</option><option value="ft">In front of the text (free move)</option></select>
       <label>Size <input type="range" id="msz" min="8" max="100" aria-label="Media size"></label>
+      <input id="malt" class="malt" placeholder="Describe this image (alt text)" aria-label="Image description for screen readers" hidden>
       <button class="soft" type="button" id="mtop">⬆ Above all text</button><button class="soft" type="button" id="mbot">⬇ Below all text</button></div>
     <div class="${pc(d)}" id="paper" style="${paperStyle(d)}"><div id="cns">${decoHTML(d.corner)}</div><div class="head" id="ph">${d.head}</div>
       <div class="body" id="body" contenteditable="true" aria-label="Letter text">${clean(S.cur.content)||'<p>Dear …</p>'}</div></div></section></div>`;
@@ -169,7 +216,7 @@ async function edit(id){
   $('#effect').onchange=e=>{S.design.effect=e.target.value;P.className=pc(S.design)};
   $('#corner').onchange=e=>{S.design.corner=e.target.value;$('#cns').innerHTML=decoHTML(e.target.value)};
   $('#ctitle').oninput=e=>{S.design.coverTitle=e.target.value};
-  document.title=S.cur.title||'New letter';$('#title').oninput=e=>{document.title=e.target.value||'New letter'};
+  setMeta({title:S.cur.title||'New letter',desc:'Edit your letter on Idea0.',tpath:'/app/editor',ttitle:'Editor'});$('#title').oninput=e=>{document.title=e.target.value||'New letter'};
   $('#head').onchange=e=>{S.design.head=e.target.value;$('#ph').textContent=e.target.value};
   initMusic();
   $('#body').onclick=e=>{
@@ -184,7 +231,8 @@ async function edit(id){
     toast('Uploading…');const path=`${S.user.id}/${crypto.randomUUID()}.${(f.name.split('.').pop()||'bin').toLowerCase()}`;
     const {error}=await sb.storage.from('media').upload(path,f,{contentType:f.type});if(error)return toast(error.message);
     const url=sb.storage.from('media').getPublicUrl(path).data.publicUrl;
-    const tag=t=='image'?`<img src="${url}" alt="">`:t=='audio'?`<audio src="${url}" controls></audio>`:`<video src="${url}" controls></video>`;
+    const label=esc(f.name.replace(/\.[^.]+$/,''));
+    const tag=t=='image'?`<img src="${url}" alt="${label}">`:t=='audio'?`<audio src="${url}" controls aria-label="${label}"></audio>`:`<video src="${url}" controls aria-label="${label}"></video>`;
     $('#body').focus();document.execCommand('insertHTML',false,`<div class="mw m-bc" style="--w:${t=='image'?60:t=='audio'?80:70}" data-path="${path}">${tag}</div><p><br></p>`);decorate();selectMW($('#body').querySelector(`.mw[data-path="${path}"]`));toast('Added');};
 }
 const fmt=c=>{$('#body').focus();document.execCommand(c)};
@@ -197,11 +245,14 @@ function decorate(){document.querySelectorAll('#body .mw').forEach(w=>{
 })}
 function bodyHTML(){const c=$('#body').cloneNode(true);c.querySelectorAll('.mdel,.mmv,.mrs').forEach(b=>b.remove());c.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));c.querySelectorAll('[contenteditable]').forEach(x=>x.removeAttribute('contenteditable'));return clean(c.innerHTML)}
 async function save(){
-  const p={title:$('#title').value||'Untitled letter',content:bodyHTML(),design:S.design,updated_at:new Date().toISOString()};
-  const r=S.cur.id?await sb.from('letters').update(p).eq('id',S.cur.id).select().single():await sb.from('letters').insert(p).select().single();
-  if(r.error)return toast(r.error.message);
-  if(S.del.length){await sb.storage.from('media').remove(S.del);S.del=[]}
-  toast('Saved');S.cur.id?S.cur=r.data:edit(r.data.id);
+  const b=$('#savebtn');b.disabled=true;b.textContent='Saving…';
+  try{
+    const p={title:$('#title').value||'Untitled letter',content:bodyHTML(),design:S.design,updated_at:new Date().toISOString()};
+    const r=S.cur.id?await sb.from('letters').update(p).eq('id',S.cur.id).select().single():await sb.from('letters').insert(p).select().single();
+    if(r.error)return toast(r.error.message);
+    if(S.del.length){await sb.storage.from('media').remove(S.del);S.del=[]}
+    toast('Saved');S.cur.id?S.cur=r.data:edit(r.data.id);
+  }finally{const nb=$('#savebtn');if(nb){nb.disabled=false;nb.textContent='Save letter'}}
 }
 async function del(){
   if(!confirm('Delete this letter for good?'))return;
@@ -261,7 +312,7 @@ function selectMW(w){
   selMW=w||null;$('#mbar').hidden=!w;
   if(w){w.classList.add('sel');syncBar(w)}
 }
-function syncBar(w){$('#mlay').value=getMode(w);$('#msz').value=Math.round(parseFloat(w.style.getPropertyValue('--w'))||60)}
+function syncBar(w){$('#mlay').value=getMode(w);$('#msz').value=Math.round(parseFloat(w.style.getPropertyValue('--w'))||60);const im=w.querySelector('img'),ma=$('#malt');ma.hidden=!im;if(im)ma.value=im.getAttribute('alt')||''}
 function setMode(w,mode){
   const was=isFree(w),b=$('#body').getBoundingClientRect(),r=w.getBoundingClientRect(),pw=$('#paper').getBoundingClientRect().width;
   MODES.forEach(m=>w.classList.remove('m-'+m));w.classList.add('m-'+mode);
@@ -272,6 +323,7 @@ function initMedia(){
   const body=$('#body'),paper=$('#paper');body.classList.add('editing');
   $('#mlay').onchange=e=>selMW&&setMode(selMW,e.target.value);
   $('#msz').oninput=e=>selMW&&selMW.style.setProperty('--w',e.target.value);
+  $('#malt').oninput=e=>{const im=selMW&&selMW.querySelector('img');if(im)im.alt=e.target.value};
   $('#mtop').onclick=()=>{if(!selMW)return;if(isFree(selMW))setMode(selMW,'bc');body.insertBefore(selMW,body.firstChild);selMW.scrollIntoView({block:'nearest'})};
   $('#mbot').onclick=()=>{if(!selMW)return;if(isFree(selMW))setMode(selMW,'bc');body.appendChild(selMW);body.insertAdjacentHTML('beforeend','<p><br></p>');selMW.scrollIntoView({block:'nearest'})};
   body.addEventListener('pointerdown',e=>{
@@ -416,22 +468,24 @@ function showQR(u){
   x.fillStyle='#fff8d6';x.fillRect(0,0,size,size);x.fillStyle='#4a3f2a';
   for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect(pad+k*cell,pad+r*cell,cell,cell);
   const png=c.toDataURL('image/png'),jpg=c.toDataURL('image/jpeg',0.95);
-  $('#out').innerHTML=`<img src="${png}" alt="QR code" width="220"><p><a download="letter-qr.png" href="${png}">Download PNG</a> · <a download="letter-qr.jpg" href="${jpg}">Download JPG</a></p>`}
+  $('#out').innerHTML=`<img src="${png}" alt="QR code that opens this letter" width="220"><p><a download="letter-qr.png" href="${png}">Download PNG</a> · <a download="letter-qr.jpg" href="${jpg}">Download JPG</a></p>`}
 function showBar(c){$('#out').innerHTML='<svg id="bc"></svg><p>Code: <b>'+c+'</b> (open /l/'+c+')</p>';
-  JsBarcode('#bc',c,{format:'CODE128',background:'#fff8d6',lineColor:'#4a3f2a',height:70})}
+  JsBarcode('#bc',c,{format:'CODE128',background:'#fff8d6',lineColor:'#4a3f2a',height:70});$('#bc').setAttribute('role','img');$('#bc').setAttribute('aria-label','Barcode for this letter')}
 
 /* ---------- public viewer (no login) ---------- */
 async function view(tok){
   document.querySelector('header').style.display='none';
+  app.innerHTML=spinner('Opening letter…');
   const {data,error}=await sb.rpc('get_public_letter',{code:tok});
-  if(error||!data||!data.length){document.title='Idea0';app.innerHTML=`<div class="card empty"><h3>This letter does not exist.</h3><a href="/">Go home</a></div>`;return}
+  if(error||!data||!data.length)return notFound('letter');
   const l=data[0],d=safeDesign(l.design),m=d.music||null;
-  document.title=l.title||'A letter for you';   // browser tab shows the letter's own title
+  setMeta({title:l.title||'A letter for you',desc:`A letter from ${l.author}, made with Idea0.`,path:'/l/'+tok,tpath:'/letter',ttitle:'Shared letter'});
   const render=()=>{app.innerHTML=`<div class="${pc(d)}" style="${paperStyle(d)}">${decoHTML(d.corner)}<div class="head">${esc(d.head)}</div><div class="body vb">${clean(l.content)}</div><p style="text-align:right">— ${esc(l.author)}</p></div>
   ${m&&m.credit?`<p class="credit">♪ ${esc(m.credit)}</p>`:''}
-  <p class="no-print" style="text-align:center"><a href="/">Make your own letter</a></p>`};
+  <p class="no-print" style="text-align:center"><a href="/">Make your own letter</a></p>`;
+    app.querySelectorAll('.body img').forEach(i=>{if(!i.getAttribute('alt'))i.alt='Photo shared in this letter'})};
   if(!m&&!d.coverTitle){render();return}
-  app.innerHTML=`<div class="card gate" style="background-color:${d.paper}"><div class="env">${esc(d.head||'💌')}</div><h2 style="font-family:${d.font},cursive">${esc(d.coverTitle||'A letter for you')}</h2><p>From ${esc(l.author)}</p><button id="open">Open letter${m?' ♪':''}</button></div>`;
+  app.innerHTML=`<div class="card gate" style="background-color:${d.paper}"><div class="env" aria-hidden="true">${esc(d.head||'💌')}</div><h2 style="font-family:${d.font},cursive">${esc(d.coverTitle||'A letter for you')}</h2><p>From ${esc(l.author)}</p><button id="open">Open letter${m?' ♪':''}</button></div>`;
   $('#open').onclick=()=>{render();if(m)playMusic(m)};
 }
 
@@ -440,6 +494,9 @@ async function view(tok){
   if(!window.SUPABASE_URL||window.SUPABASE_URL.includes('YOUR-PROJECT')){app.innerHTML='<div class="card empty"><h3>Almost there</h3><p>Add your Supabase URL and key to <b>public/config.js</b>.</p></div>';return}
   sb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
   $('#modal').onclick=e=>{if(e.target.id=='modal')closeM()};
-  const m=location.pathname.match(/^\/l\/([\w-]+)/);if(m)return view(m[1]);
-  const {data}=await sb.auth.getSession();S.user=data.session?.user||null;S.user?dash():authView();
+  const path=location.pathname.replace(/\/+$/,'')||'/';
+  const m=path.match(/^\/l\/([\w-]+)$/);if(m)return view(m[1]);
+  if(path==='/privacy'){location.replace('/privacy.html');return}
+  if(path!=='/'&&path!=='/index.html')return notFound('page');
+  const {data}=await sb.auth.getSession();S.user=data.session?.user||null;S.user?dash():landing();
 })();
