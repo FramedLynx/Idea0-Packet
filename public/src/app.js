@@ -112,6 +112,16 @@ function landing(){
 }
 
 /* ---------- auth ---------- */
+function offerResend(){
+  $('#rs').innerHTML='<button class="soft" type="button" id="resend">Resend confirmation email</button>';
+  $('#resend').onclick=async()=>{
+    const email=$('#e').value.trim();if(!email)return toast('Type your email above first.');
+    const b=$('#resend');b.disabled=true;b.textContent='Sending…';
+    const {error}=await sb.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+'/'}});
+    b.disabled=false;b.textContent='Resend confirmation email';
+    toast(error?error.message:'Sent! Check your inbox and spam folder.');
+  };
+}
 function authView(mode='login'){
   const reg=mode==='register';nav();
   setMeta({title:reg?'Create your free account | Idea0':'Log in | Idea0',desc:reg?'Create a free Idea0 account to design letters and share them with anyone.':'Log in to your Idea0 account to view and edit your letters.',tpath:reg?'/signup':'/login',ttitle:reg?'Sign up':'Log in'});
@@ -119,7 +129,7 @@ function authView(mode='login'){
   ${reg?'<label for="n">Name</label><input id="n" autocomplete="name">':''}
   <label for="e">Email</label><input id="e" type="email" autocomplete="email">
   <label for="p">Password</label><input id="p" type="password" autocomplete="${reg?'new-password':'current-password'}">
-  <p class="err" id="err"></p><button id="go">${reg?'Sign up':'Log in'}</button>
+  <p class="err" id="err"></p><div id="rs"></div><button id="go">${reg?'Sign up':'Log in'}</button>
   <p><a href="#" id="sw">${reg?'I already have an account':'Create a new account'}</a></p></div>`;
   $('#sw').onclick=e=>{e.preventDefault();authView(reg?'login':'register')};
   $('#go').onclick=async()=>{
@@ -127,11 +137,11 @@ function authView(mode='login'){
     const go=$('#go');go.disabled=true;go.textContent='Please wait…';
     try{
       if(reg&&(!$('#n').value.trim()||password.length<8))throw new Error('Enter your name and a password of 8+ characters.');
-      const r=reg?await sb.auth.signUp({email,password,options:{data:{name:$('#n').value.trim()}}}):await sb.auth.signInWithPassword({email,password});
+      const r=reg?await sb.auth.signUp({email,password,options:{data:{name:$('#n').value.trim()},emailRedirectTo:location.origin+'/'}}):await sb.auth.signInWithPassword({email,password});
       if(r.error)throw r.error;
-      if(!r.data.session){$('#err').textContent='Check your email to confirm your account, then log in.';return}
+      if(!r.data.session){$('#err').textContent='Check your email to confirm your account, then log in.';offerResend();return}
       S.user=r.data.user;dash();
-    }catch(e){$('#err').textContent=e.message}
+    }catch(e){$('#err').textContent=e.message;if(/not confirmed/i.test(e.message))offerResend()}
     finally{go.disabled=false;go.textContent=reg?'Sign up':'Log in'}};
 }
 
@@ -492,11 +502,15 @@ async function view(tok){
 /* ---------- boot ---------- */
 (async()=>{
   if(!window.SUPABASE_URL||window.SUPABASE_URL.includes('YOUR-PROJECT')){app.innerHTML='<div class="card empty"><h3>Almost there</h3><p>Add your Supabase URL and key to <b>public/config.js</b>.</p></div>';return}
+  const hp=new URLSearchParams(location.hash.slice(1)),hashErr=hp.get('error_code')||hp.get('error'),justConfirmed=hp.get('type')==='signup';
+  if(hashErr)history.replaceState(null,'',location.pathname);
   sb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
   $('#modal').onclick=e=>{if(e.target.id=='modal')closeM()};
   const path=location.pathname.replace(/\/+$/,'')||'/';
   const m=path.match(/^\/l\/([\w-]+)$/);if(m)return view(m[1]);
   if(path==='/privacy'){location.replace('/privacy.html');return}
   if(path!=='/'&&path!=='/index.html')return notFound('page');
-  const {data}=await sb.auth.getSession();S.user=data.session?.user||null;S.user?dash():landing();
+  const {data}=await sb.auth.getSession();S.user=data.session?.user||null;
+  if(hashErr&&!S.user){authView('login');$('#err').textContent='That confirmation link is invalid or has expired. Type your email below to get a new one.';offerResend();return}
+  if(S.user){await dash();if(justConfirmed)toast('Email confirmed. Welcome to Idea0!')}else landing();
 })();
