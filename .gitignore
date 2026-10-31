@@ -1,3 +1,4 @@
 node_modules
 .DS_Store
-public/config.js
+public\config.js
+public\src\google9ebb11973884228a.html
