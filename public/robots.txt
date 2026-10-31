@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /l/
+Disallow: /*?l=
+
+Sitemap: https://idea0-packet.pages.dev/sitemap.xml

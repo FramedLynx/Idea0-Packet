@@ -452,7 +452,7 @@ function playMusic(m){
 
 /* ---------- sharing ---------- */
 function shareModal(){
-  const code=S.cur.share_token,url=location.origin+'/l/'+code,t=encodeURIComponent(S.cur.title||'A letter for you'),u=encodeURIComponent(url);
+  const code=S.cur.share_token,url=location.origin+'/?l='+code,t=encodeURIComponent(S.cur.title||'A letter for you'),u=encodeURIComponent(url);
   const links=[['WhatsApp',`https://wa.me/?text=${t}%20${u}`],['Telegram',`https://t.me/share/url?url=${u}&text=${t}`],['Messenger',`https://www.facebook.com/dialog/send?link=${u}&app_id=0&redirect_uri=${u}`],
     ['Facebook',`https://www.facebook.com/sharer/sharer.php?u=${u}`],['X / Twitter',`https://twitter.com/intent/tweet?text=${t}&url=${u}`],['LinkedIn',`https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
     ['Reddit',`https://www.reddit.com/submit?url=${u}&title=${t}`],['Pinterest',`https://pinterest.com/pin/create/button/?url=${u}&description=${t}`],
@@ -479,7 +479,7 @@ function showQR(u){
   for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect(pad+k*cell,pad+r*cell,cell,cell);
   const png=c.toDataURL('image/png'),jpg=c.toDataURL('image/jpeg',0.95);
   $('#out').innerHTML=`<img src="${png}" alt="QR code that opens this letter" width="220"><p><a download="letter-qr.png" href="${png}">Download PNG</a> · <a download="letter-qr.jpg" href="${jpg}">Download JPG</a></p>`}
-function showBar(c){$('#out').innerHTML='<svg id="bc"></svg><p>Code: <b>'+c+'</b> (open /l/'+c+')</p>';
+function showBar(c){$('#out').innerHTML='<svg id="bc"></svg><p>Code: <b>'+c+'</b> (share code)</p>';
   JsBarcode('#bc',c,{format:'CODE128',background:'#fff8d6',lineColor:'#4a3f2a',height:70});$('#bc').setAttribute('role','img');$('#bc').setAttribute('aria-label','Barcode for this letter')}
 
 /* ---------- public viewer (no login) ---------- */
@@ -489,7 +489,7 @@ async function view(tok){
   const {data,error}=await sb.rpc('get_public_letter',{code:tok});
   if(error||!data||!data.length)return notFound('letter');
   const l=data[0],d=safeDesign(l.design),m=d.music||null;
-  setMeta({title:l.title||'A letter for you',desc:`A letter from ${l.author}, made with Idea0.`,path:'/l/'+tok,tpath:'/letter',ttitle:'Shared letter'});
+  setMeta({title:l.title||'A letter for you',desc:`A letter from ${l.author}, made with Idea0.`,path:'/?l='+tok,tpath:'/letter',ttitle:'Shared letter'});
   const render=()=>{app.innerHTML=`<div class="${pc(d)}" style="${paperStyle(d)}">${decoHTML(d.corner)}<div class="head">${esc(d.head)}</div><div class="body vb">${clean(l.content)}</div><p style="text-align:right">— ${esc(l.author)}</p></div>
   ${m&&m.credit?`<p class="credit">♪ ${esc(m.credit)}</p>`:''}
   <p class="no-print" style="text-align:center"><a href="/">Make your own letter</a></p>`;
@@ -508,6 +508,7 @@ async function view(tok){
   $('#modal').onclick=e=>{if(e.target.id=='modal')closeM()};
   const path=location.pathname.replace(/\/+$/,'')||'/';
   const m=path.match(/^\/l\/([\w-]+)$/);if(m)return view(m[1]);
+  const q=new URLSearchParams(location.search).get('l');if(q&&/^[\w-]+$/.test(q))return view(q);   // share links look like /?l=CODE and work on any host
   if(path==='/privacy'){location.replace('/privacy.html');return}
   if(path!=='/'&&path!=='/index.html')return notFound('page');
   const {data}=await sb.auth.getSession();S.user=data.session?.user||null;
